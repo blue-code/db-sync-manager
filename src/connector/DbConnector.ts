@@ -22,6 +22,12 @@ export interface DbConnector {
   /** 특정 테이블의 데이터를 읽어 온다(WHERE/LIMIT 는 이후 확장). */
   fetchRows(config: ConnectionConfig, table: string): Promise<DataRow[]>;
 
-  /** 생성된 SQL 문들을 하나의 트랜잭션으로 실행한다. */
-  execute(config: ConnectionConfig, statements: string[]): Promise<void>;
+  /** 현재 사용자의 권한을 SHOW GRANTS 원시 라인으로 읽어 온다(권한 검사용). */
+  fetchGrants(config: ConnectionConfig): Promise<string[]>;
+
+  /**
+   * 생성된 SQL 문들을 하나의 트랜잭션으로 실행한다.
+   * 실행 완료된 문장 수를 돌려준다(실패 시 롤백 후 예외).
+   */
+  execute(config: ConnectionConfig, statements: string[]): Promise<number>;
 }

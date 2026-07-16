@@ -32,5 +32,16 @@ export { generateSyncSql } from "./sync/sqlGenerator.js";
 export type { GenerateOptions } from "./sync/sqlGenerator.js";
 export { quoteId, quoteValue, escapeString } from "./sync/sqlDialect.js";
 
-// 커넥터 포트
+// 커넥터 포트 & MySQL 구현
 export type { DbConnector } from "./connector/DbConnector.js";
+export { MysqlConnector } from "./connector/mysqlConnector.js";
+export { buildSnapshot } from "./connector/schemaMapper.js";
+export { runInTransaction } from "./connector/transaction.js";
+export type { TxConnection, ExecuteResult } from "./connector/transaction.js";
+export {
+  parseGrants,
+  hasPrivilege,
+  checkPrivileges,
+  requiredPrivilegesForMode,
+} from "./connector/privileges.js";
+export type { Privilege, PrivilegeCheck } from "./connector/privileges.js";

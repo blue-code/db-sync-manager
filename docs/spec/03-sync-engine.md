@@ -36,7 +36,22 @@
 - 유한하지 않은 숫자(`Infinity`/`NaN`)는 예외
 - 값 포매팅을 한곳에 모아 인젝션/문법 오류를 통제
 
-## 실행/트랜잭션(예정)
+## 실행/트랜잭션
 
-Execution Engine 은 생성된 문장을 `BEGIN … COMMIT` 으로 감싸고,
-실패 시 `ROLLBACK` 한다. 위험 모드는 실행 전 Target 자동 백업(Dump)을 선행한다.
+구현: `src/connector/transaction.ts` · 테스트: `test/transaction.test.ts`
+
+`runInTransaction(conn, statements)` 은 생성된 문장을 `BEGIN … COMMIT` 으로 감싸고,
+중간 실패 시 `ROLLBACK` 후 원인 에러를 전파한다.
+
+- 빈 배열은 트랜잭션을 열지 않는다.
+- 커넥션은 `TxConnection` 포트로 추상화 → mysql2 커넥션이 이를 만족하고, 테스트는 가짜 커넥션으로 대체.
+
+위험 모드(overwrite)의 실행 전 Target 자동 백업(Dump)은 Phase 3 에서 연결한다.
+
+## 권한 검사
+
+구현: `src/connector/privileges.ts` · 테스트: `test/privileges.test.ts`
+
+`SHOW GRANTS` 결과를 파싱(`parseGrants`)해 보유 권한 집합을 만들고,
+`requiredPrivilegesForMode(mode)` 와 대조(`checkPrivileges`)해 부족 권한을 계산한다.
+`ALL PRIVILEGES` 는 모든 권한을 포함하는 것으로 처리한다.

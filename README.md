@@ -28,9 +28,10 @@
 +------------------------------------------------------+
 ```
 
-## 현재 구현 범위 (v0.1 — 코어 수직 슬라이스)
+## 현재 구현 범위 (v0.2 — 코어 엔진 + 실 DB 연동)
 
 스펙 우선(SDD)으로 계약을 먼저 확정하고, DB 없이 검증 가능한 순수 코어부터 구현했다.
+Phase 1 에서 mysql2 커넥터를 붙이되, 판단 로직(매핑·권한·트랜잭션)은 순수 모듈로 분리해 테스트한다.
 
 | 영역 | 상태 | 위치 |
 | --- | --- | --- |
@@ -39,10 +40,15 @@
 | SQL 방언 유틸(인용/이스케이프) | ✅ | `src/sync/sqlDialect.ts` |
 | Sync Mode 정의 (overwrite / insertOnly / updateOnly / upsert) | ✅ | `src/sync/syncMode.ts` |
 | Sync SQL 생성기 | ✅ | `src/sync/sqlGenerator.ts` |
-| DbConnector 포트 | ✅(인터페이스) | `src/connector/DbConnector.ts` |
-| MySQL/MariaDB 커넥터 구현 | ⏳ | 예정 |
-| 데이터 비교 엔진 | ⏳ | 예정 |
+| DbConnector 포트 | ✅ | `src/connector/DbConnector.ts` |
+| MySQL/MariaDB 커넥터 구현 (mysql2) | ✅ | `src/connector/mysqlConnector.ts` |
+| INFORMATION_SCHEMA → 스냅샷 매핑 (순수) | ✅ | `src/connector/schemaMapper.ts` |
+| 권한 검사 (SHOW GRANTS 파싱) | ✅ | `src/connector/privileges.ts` |
+| Execution Engine (트랜잭션 + 롤백) | ✅ | `src/connector/transaction.ts` |
+| 데이터 비교 엔진 | ⏳ | 예정 (Phase 2) |
 | Dump/Restore, History, Scheduler, GUI | ⏳ | `docs/roadmap.md` |
+
+전 계층 순수 로직은 Vitest 로 검증한다(현재 35개 통과). 커넥터의 I/O 배선만 실 DB 를 요구한다.
 
 ## 개발
 

@@ -10,12 +10,12 @@
 - [x] Sync Mode 정의 + Sync SQL Generator (overwrite / insertOnly / updateOnly / upsert)
 - [x] DbConnector 포트 정의
 
-## Phase 1 — 실 DB 연동
+## Phase 1 — 실 DB 연동 ✅
 
-- [ ] MySQL/MariaDB 커넥터 구현 (mysql2 기반, `DbConnector` 구현체)
-- [ ] `INFORMATION_SCHEMA` → `SchemaSnapshot` 매핑
-- [ ] 연결 테스트 / 권한 검사 (SELECT/INSERT/UPDATE/DELETE/CREATE/DROP/ALTER)
-- [ ] Execution Engine (트랜잭션 + 롤백)
+- [x] MySQL/MariaDB 커넥터 구현 (mysql2 기반, `DbConnector` 구현체)
+- [x] `INFORMATION_SCHEMA` → `SchemaSnapshot` 매핑 (순수, 테스트됨)
+- [x] 연결 테스트(ping) / 권한 검사 (SHOW GRANTS 파싱 → Sync Mode별 필요 권한 대조)
+- [x] Execution Engine (트랜잭션 + 실패 시 롤백, 가짜 커넥션으로 검증)
 
 ## Phase 2 — 데이터 비교 & 계획
 
