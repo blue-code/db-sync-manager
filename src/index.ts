@@ -22,15 +22,50 @@ export type {
 } from "./domain/diff.js";
 export { isSchemaIdentical } from "./domain/diff.js";
 
-// Compare 엔진
+// Compare 엔진 (스키마 & 데이터)
 export { compareSchema } from "./compare/schemaCompare.js";
+export { compareData, valueEquals } from "./compare/dataCompare.js";
+export type {
+  DataDiff,
+  DataDiffSummary,
+  RowDiff,
+  RowDiffStatus,
+  CellChange,
+} from "./domain/dataDiff.js";
 
 // Sync 엔진
 export type { SyncMode } from "./sync/syncMode.js";
 export { mayDeleteRows } from "./sync/syncMode.js";
-export { generateSyncSql } from "./sync/sqlGenerator.js";
+export {
+  generateSyncSql,
+  buildInsert,
+  buildUpdates,
+  buildUpsert,
+  buildDeletes,
+} from "./sync/sqlGenerator.js";
 export type { GenerateOptions } from "./sync/sqlGenerator.js";
 export { quoteId, quoteValue, escapeString } from "./sync/sqlDialect.js";
+
+// Sync Planner
+export { buildSyncPlan, generatePlanSql } from "./sync/syncPlanner.js";
+export type {
+  SyncPlan,
+  PlannedOperation,
+  PlanSummary,
+  PlanOptions,
+  OperationKind,
+} from "./sync/syncPlanner.js";
+
+// 필터
+export {
+  rangeFilter,
+  dateRangeFilter,
+  equalsFilter,
+  and,
+  applyFilter,
+  pickColumns,
+} from "./sync/filters.js";
+export type { RowPredicate } from "./sync/filters.js";
 
 // 커넥터 포트 & MySQL 구현
 export type { DbConnector } from "./connector/DbConnector.js";

@@ -17,12 +17,12 @@
 - [x] 연결 테스트(ping) / 권한 검사 (SHOW GRANTS 파싱 → Sync Mode별 필요 권한 대조)
 - [x] Execution Engine (트랜잭션 + 실패 시 롤백, 가짜 커넥션으로 검증)
 
-## Phase 2 — 데이터 비교 & 계획
+## Phase 2 — 데이터 비교 & 계획 ✅
 
-- [ ] Data Compare (PK / Unique / 사용자 지정 키 기준 행 diff)
-- [ ] Sync Planner (Diff → 적용 대상 선택 → SQL)
-- [ ] 필터: WHERE 조건 / PK 범위 / 날짜 범위 / 특정 컬럼만
-- [ ] Difference Review 모델 (적용/제외 체크, 건수 요약)
+- [x] Data Compare (PK / Unique / 사용자 지정 키 기준 행 diff, 복합 키)
+- [x] Sync Planner (Diff → 적용 대상 선택 → SQL, INSERT/UPDATE/DELETE)
+- [x] 필터: 동등/PK 범위 / 날짜 범위 / 특정 컬럼만(pickColumns)
+- [x] Difference Review 모델 (select 적용/제외, 건수 요약, destructive 표시)
 
 ## Phase 3 — Dump / Restore / 안전장치
 
