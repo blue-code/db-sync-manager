@@ -70,14 +70,94 @@ function showPanel(name) {
 $$(".actions .tab").forEach((b) => b.addEventListener("click", () => showPanel(b.dataset.panel)));
 
 // ----- 연결 테스트 -----
+function setConnStatus(role, kind, text) {
+  const el = document.querySelector(`.conn-status[data-role="${role}"]`);
+  if (!el) return;
+  el.textContent = text;
+  el.className = "conn-status " + kind;
+}
+
 $$(".conn-card .test").forEach((btn) =>
   btn.addEventListener("click", async () => {
     const role = btn.dataset.target;
+    btn.disabled = true;
+    setConnStatus(role, "busy", "⏳ 확인 중…");
     setStatus(`${role} 접속 확인 중...`, "busy");
-    const res = await window.dbsync.testConnection(readConn(role));
-    setStatus(`${role}: ${res.message}`, res.ok ? "ok" : "err");
+    try {
+      const res = await window.dbsync.testConnection(readConn(role));
+      if (res.ok) {
+        setConnStatus(role, "ok", "✓ 접속됨");
+        // 성공한 접속 정보를 기억한다(비밀번호 제외).
+        await window.dbsync.connectionsSave(role, readConn(role));
+        await loadRecents();
+      } else {
+        setConnStatus(role, "err", "✗ 실패");
+      }
+      setStatus(`${role}: ${res.message}`, res.ok ? "ok" : "err");
+    } catch (err) {
+      setConnStatus(role, "err", "✗ 오류");
+      setStatus(`${role} 오류: ${err?.message ?? err}`, "err");
+    } finally {
+      btn.disabled = false;
+    }
   }),
 );
+
+// 입력을 바꾸면 이전 접속 표시는 지운다(오해 방지).
+$$(".conn-card input").forEach((inp) =>
+  inp.addEventListener("input", () => {
+    const role = inp.closest(".conn-card").dataset.role;
+    setConnStatus(role, "", "");
+  }),
+);
+
+// ----- 최근 접속(입력 정보 기억) -----
+let recentsCache = [];
+
+function fillConnForm(role, c) {
+  const form = document.querySelector(`.conn-card[data-role="${role}"]`);
+  ["host", "port", "user", "database"].forEach((n) => {
+    if (c[n] !== undefined && c[n] !== null) form.querySelector(`[name="${n}"]`).value = c[n];
+  });
+}
+
+function populateRecents(recents) {
+  recentsCache = recents || [];
+  $$(".recent-pick").forEach((sel) => {
+    sel.innerHTML =
+      '<option value="">(직접 입력)</option>' +
+      recentsCache
+        .map((c, i) => `<option value="${i}">${escapeHtml(`${c.user}@${c.host}:${c.port}/${c.database}`)}</option>`)
+        .join("");
+  });
+}
+
+$$(".recent-pick").forEach((sel) =>
+  sel.addEventListener("change", () => {
+    const i = Number(sel.value);
+    if (sel.value !== "" && recentsCache[i]) {
+      fillConnForm(sel.dataset.role, recentsCache[i]);
+      setConnStatus(sel.dataset.role, "", "");
+    }
+    sel.value = "";
+  }),
+);
+
+async function loadRecents() {
+  const state = await window.dbsync.connectionsLoad();
+  populateRecents(state.recents);
+}
+
+async function initConnections() {
+  try {
+    const state = await window.dbsync.connectionsLoad();
+    if (state.origin) fillConnForm("origin", state.origin);
+    if (state.target) fillConnForm("target", state.target);
+    populateRecents(state.recents);
+  } catch {
+    /* 저장된 접속이 없으면 기본값 유지 */
+  }
+}
 
 // ----- ① 비교 -----
 const TAG = {
@@ -477,3 +557,4 @@ $("#task-load-list").addEventListener("click", refreshTasks);
 updateSchedFields();
 
 showPanel("analyze");
+initConnections();

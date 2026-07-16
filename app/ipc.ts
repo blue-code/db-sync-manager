@@ -17,6 +17,7 @@ import type {
   Task,
   TaskKind,
   Schedule,
+  RecentConnection,
 } from "../src/index.js";
 
 export const CHANNELS = {
@@ -33,6 +34,8 @@ export const CHANNELS = {
   planRestore: "dbsync:planRestore",
   applyRestore: "dbsync:applyRestore",
   listHistory: "dbsync:listHistory",
+  connectionsLoad: "dbsync:connectionsLoad",
+  connectionsSave: "dbsync:connectionsSave",
   taskList: "dbsync:taskList",
   taskSave: "dbsync:taskSave",
   taskRemove: "dbsync:taskRemove",
@@ -203,4 +206,12 @@ export interface SaveSecretInput {
   taskId: string;
   role: "origin" | "target";
   password: string;
+}
+
+// ----- 최근 접속(입력 정보 기억) -----
+
+export interface ConnectionsState {
+  origin?: RecentConnection;
+  target?: RecentConnection;
+  recents: RecentConnection[];
 }

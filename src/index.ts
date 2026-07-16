@@ -154,6 +154,8 @@ export type { LogEntry, LogLevel, LogSink } from "./logging/logger.js";
 // 커넥터 포트 & MySQL 구현
 export type { DbConnector } from "./connector/DbConnector.js";
 export { MysqlConnector } from "./connector/mysqlConnector.js";
+export { addRecent, connKey } from "./connector/recentConnections.js";
+export type { RecentConnection } from "./connector/recentConnections.js";
 export { buildSnapshot } from "./connector/schemaMapper.js";
 export { runInTransaction } from "./connector/transaction.js";
 export type { TxConnection, ExecuteResult } from "./connector/transaction.js";

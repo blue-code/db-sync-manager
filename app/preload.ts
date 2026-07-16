@@ -27,6 +27,7 @@ import {
   type TaskListResult,
   type TaskMutateResult,
   type SaveSecretInput,
+  type ConnectionsState,
 } from "./ipc.js";
 
 const api = {
@@ -58,6 +59,10 @@ const api = {
     ipcRenderer.invoke(CHANNELS.applyRestore, target, params),
 
   listHistory: (): Promise<unknown[]> => ipcRenderer.invoke(CHANNELS.listHistory),
+
+  connectionsLoad: (): Promise<ConnectionsState> => ipcRenderer.invoke(CHANNELS.connectionsLoad),
+  connectionsSave: (role: "origin" | "target", config: ConnForm): Promise<{ ok: boolean }> =>
+    ipcRenderer.invoke(CHANNELS.connectionsSave, role, config),
 
   taskList: (): Promise<TaskListResult> => ipcRenderer.invoke(CHANNELS.taskList),
   taskSave: (input: TaskSaveInput): Promise<TaskMutateResult> =>

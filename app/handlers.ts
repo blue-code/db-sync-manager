@@ -7,7 +7,7 @@
  */
 
 import { join } from "node:path";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import {
   compareSchema,
   compareData,
@@ -31,6 +31,8 @@ import {
   upsertTask,
   removeTask,
   nextRun,
+  addRecent,
+  type RecentConnection,
   type DbConnector,
   type TaskInput,
   type DataRow,
@@ -60,6 +62,7 @@ import type {
   TaskListResult,
   TaskListItem,
   TaskMutateResult,
+  ConnectionsState,
 } from "./ipc.js";
 
 export interface HandlerDeps {
@@ -86,6 +89,21 @@ function clipPreview(text: string, max = 8000): string {
 /** 키 객체를 선택 매칭용 안정 문자열로 만든다(renderer 와 규칙 일치). */
 function keyStr(key: Record<string, unknown>, keyColumns: string[]): string {
   return keyColumns.map((c) => JSON.stringify(key[c] ?? null)).join("");
+}
+
+/** connections.json 을 읽어 정규화한다(없거나 손상 시 빈 상태). */
+async function readConnections(userDataDir: string): Promise<ConnectionsState> {
+  try {
+    const parsed = JSON.parse(
+      await readFile(join(userDataDir, "connections.json"), "utf8"),
+    ) as Partial<ConnectionsState>;
+    const state: ConnectionsState = { recents: parsed.recents ?? [] };
+    if (parsed.origin) state.origin = parsed.origin;
+    if (parsed.target) state.target = parsed.target;
+    return state;
+  } catch {
+    return { recents: [] };
+  }
 }
 
 interface SyncComputation {
@@ -430,6 +448,27 @@ export function createHandlers(deps: HandlerDeps) {
 
     listHistory() {
       return historyStore().list();
+    },
+
+    /** 저장된 최근 접속(입력 정보)을 불러온다. */
+    async connectionsLoad(): Promise<ConnectionsState> {
+      return readConnections(userDataDir);
+    },
+
+    /** 입력한 접속 정보를 기억한다(비밀번호 제외). */
+    async connectionsSave(role: "origin" | "target", config: ConnForm): Promise<{ ok: boolean }> {
+      const entry: RecentConnection = {
+        host: config.host,
+        port: config.port,
+        user: config.user,
+        database: config.database,
+      };
+      const state = await readConnections(userDataDir);
+      state[role] = entry;
+      state.recents = addRecent(state.recents, entry);
+      await mkdir(userDataDir, { recursive: true });
+      await writeFile(join(userDataDir, "connections.json"), JSON.stringify(state, null, 2), "utf8");
+      return { ok: true };
     },
   };
 }

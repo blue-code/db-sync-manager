@@ -157,6 +157,8 @@ function registerIpc(): void {
   ipcMain.handle(CHANNELS.taskList, () => h.taskList());
   ipcMain.handle(CHANNELS.taskRemove, (_e, id: string) => h.taskRemove(id));
   ipcMain.handle(CHANNELS.listHistory, () => h.listHistory());
+  ipcMain.handle(CHANNELS.connectionsLoad, () => h.connectionsLoad());
+  ipcMain.handle(CHANNELS.connectionsSave, (_e, role, config: ConnForm) => h.connectionsSave(role, config));
 
   // 파일 대화상자가 필요한 채널: 경로만 여기서 얻어 핸들러에 위임한다.
   ipcMain.handle(

@@ -49,6 +49,8 @@ function toConnectionOptions(config: ConnectionConfig): mysql.ConnectionOptions 
     bigNumberStrings: true,
     dateStrings: true,
     multipleStatements: false,
+    // 접속 불가한 호스트에서 무한 대기하지 않도록 8초 제한(연결 테스트 응답성).
+    connectTimeout: 8000,
   };
 }
 

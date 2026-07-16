@@ -19,7 +19,10 @@
     <main class="layout">
       <section class="panels">
         <form class="conn-card" data-role="origin">
-          <h2>Origin</h2>
+          <h2>Origin <span class="conn-status" data-role="origin"></span></h2>
+          <label class="recent-wrap">최근 접속
+            <select class="recent-pick" data-role="origin"><option value="">(직접 입력)</option></select>
+          </label>
           <label>Host <input name="host" value="127.0.0.1" /></label>
           <label>Port <input name="port" type="number" value="3306" /></label>
           <label>ID <input name="user" value="root" /></label>
@@ -31,7 +34,10 @@
         <div class="arrow">↓</div>
 
         <form class="conn-card" data-role="target">
-          <h2>Target</h2>
+          <h2>Target <span class="conn-status" data-role="target"></span></h2>
+          <label class="recent-wrap">최근 접속
+            <select class="recent-pick" data-role="target"><option value="">(직접 입력)</option></select>
+          </label>
           <label>Host <input name="host" value="127.0.0.1" /></label>
           <label>Port <input name="port" type="number" value="3306" /></label>
           <label>ID <input name="user" value="root" /></label>
