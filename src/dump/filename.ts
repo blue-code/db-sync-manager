@@ -5,11 +5,13 @@
  * 시각은 재현성/테스트를 위해 외부에서 Date 를 주입받는다.
  */
 
-export type Compression = "none" | "gzip";
+export type Compression = "none" | "gzip" | "zip";
 
 /** 압축 방식에 대응하는 확장자. */
 export function extensionFor(compression: Compression): string {
-  return compression === "gzip" ? ".sql.gz" : ".sql";
+  if (compression === "gzip") return ".sql.gz";
+  if (compression === "zip") return ".sql.zip";
+  return ".sql";
 }
 
 /** 파일명에 쓰기 안전한 형태로 정리한다(영숫자/._- 외는 _). */

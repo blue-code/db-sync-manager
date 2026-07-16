@@ -25,6 +25,7 @@ describe("detectCompression", () => {
   it("확장자로 압축 방식을 판별한다", () => {
     expect(detectCompression("a.sql")).toBe("none");
     expect(detectCompression("a.sql.gz")).toBe("gzip");
+    expect(detectCompression("a.sql.zip")).toBe("zip");
   });
 });
 
@@ -39,6 +40,13 @@ describe("writeDumpFile / readDumpFile", () => {
   it("gzip 왕복이 원문과 일치한다", async () => {
     const dir = await tempDir();
     const path = join(dir, "d.sql.gz");
+    await writeDumpFile(path, sample);
+    expect(await readDumpFile(path)).toBe(sample);
+  });
+
+  it("zip 왕복이 원문과 일치한다", async () => {
+    const dir = await tempDir();
+    const path = join(dir, "d.sql.zip");
     await writeDumpFile(path, sample);
     expect(await readDumpFile(path)).toBe(sample);
   });

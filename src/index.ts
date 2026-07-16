@@ -105,6 +105,7 @@ export {
   readDumpFile,
   detectCompression,
 } from "./dump/dumpFile.js";
+export { zipSingleFile, unzipSingleFile, crc32 } from "./dump/zip.js";
 export { planRestore, restore } from "./dump/restore.js";
 export type { RestoreOptions } from "./dump/restore.js";
 export { buildBackupDump, createBackup } from "./dump/backup.js";

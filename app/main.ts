@@ -65,7 +65,13 @@ function registerIpc(): void {
       const picked = await dialog.showSaveDialog({
         title: "덤프 저장",
         defaultPath: autoDumpFilename(origin.database, new Date(), params.compression),
-        filters: [{ name: "SQL Dump", extensions: params.compression === "gzip" ? ["gz"] : ["sql"] }],
+        filters: [
+          {
+            name: "SQL Dump",
+            extensions:
+              params.compression === "gzip" ? ["gz"] : params.compression === "zip" ? ["zip"] : ["sql"],
+          },
+        ],
       });
       if (picked.canceled || !picked.filePath) return { ok: false, message: "저장이 취소되었습니다." };
       return h.saveDumpTo(origin, params, picked.filePath);

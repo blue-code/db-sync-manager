@@ -23,9 +23,10 @@
 
 `src/dump/dumpFile.ts` — `writeDumpFile` / `readDumpFile` / `detectCompression`
 
-- 지원: `none`, `gzip`(Node 내장 zlib, 외부 의존성 없음)
-- 확장자로 압축 자동 판별, 왕복(write→read) 정합성 테스트
-- zip 은 외부 의존성 없이 안전 구현·검증이 필요해 후속 과제(로드맵)
+- 지원: `none`, `gzip`, `zip` (모두 Node 내장 zlib, 외부 의존성 없음)
+- zip: `src/dump/zip.ts` — raw deflate + 자체 CRC32 로 표준 단일 파일 ZIP 생성/해제
+  - 표준 호환 검증: 우리가 만든 zip 을 .NET `ZipFile` 이 정상 판독
+- 확장자로 압축 자동 판별, 왕복(write→read) 정합성 테스트(gzip/zip)
 
 ## Restore
 

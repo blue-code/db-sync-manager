@@ -6,36 +6,50 @@
  * (zip 은 별도 검증이 필요해 후속 과제로 둔다 — 로드맵 참조)
  */
 
+import { basename } from "node:path";
 import { readFile, writeFile } from "node:fs/promises";
 import { gzipSync, gunzipSync } from "node:zlib";
 import type { Compression } from "./filename.js";
+import { zipSingleFile, unzipSingleFile } from "./zip.js";
 
 /** 확장자로 압축 방식을 추정한다. */
 export function detectCompression(filePath: string): Compression {
-  return /\.gz$/i.test(filePath) ? "gzip" : "none";
+  if (/\.zip$/i.test(filePath)) return "zip";
+  if (/\.gz$/i.test(filePath)) return "gzip";
+  return "none";
 }
 
-/** 덤프 텍스트를 파일로 쓴다. gzip 이면 압축해 저장한다. */
+/** ZIP 내부 엔트리 이름(경로에서 .zip 만 떼어낸다). */
+function innerName(filePath: string): string {
+  return basename(filePath).replace(/\.zip$/i, "");
+}
+
+/** 덤프 텍스트를 파일로 쓴다. gzip/zip 이면 압축해 저장한다. */
 export async function writeDumpFile(
   filePath: string,
   content: string,
   compression: Compression = detectCompression(filePath),
 ): Promise<void> {
+  const raw = Buffer.from(content, "utf8");
   if (compression === "gzip") {
-    await writeFile(filePath, gzipSync(Buffer.from(content, "utf8")));
+    await writeFile(filePath, gzipSync(raw));
+  } else if (compression === "zip") {
+    await writeFile(filePath, zipSingleFile(innerName(filePath), raw));
   } else {
     await writeFile(filePath, content, "utf8");
   }
 }
 
-/** 덤프 파일을 읽어 텍스트로 돌려준다. .gz 는 자동 해제한다. */
+/** 덤프 파일을 읽어 텍스트로 돌려준다. .gz/.zip 은 자동 해제한다. */
 export async function readDumpFile(
   filePath: string,
   compression: Compression = detectCompression(filePath),
 ): Promise<string> {
   if (compression === "gzip") {
-    const buf = await readFile(filePath);
-    return gunzipSync(buf).toString("utf8");
+    return gunzipSync(await readFile(filePath)).toString("utf8");
+  }
+  if (compression === "zip") {
+    return unzipSingleFile(await readFile(filePath)).content.toString("utf8");
   }
   return readFile(filePath, "utf8");
 }
