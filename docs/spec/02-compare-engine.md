@@ -20,7 +20,20 @@
 
 `dataType`, `nullable`, `default`, `autoIncrement`
 
-> 인덱스/FK/트리거/뷰/프로시저 비교는 후속 track 에서 확장한다(로드맵).
+### 확장 비교 (Index / FK / DB 객체)
+
+`TableDiff` 는 컬럼 외에 `indexes` / `foreignKeys` 차이(`NamedDiff[]`)를 포함한다.
+셋 중 하나라도 다르면 테이블은 `modified`.
+
+- 인덱스 동등성: 유니크 여부 + 구성 컬럼(순서 포함)
+- FK 동등성: 컬럼 / 참조 테이블 / 참조 컬럼 / ON UPDATE·DELETE
+
+`SchemaDiff.objects`(`ObjectDiff[]`, kind=view/routine/trigger/event)로 DB 레벨 객체를 비교한다.
+
+- 정의는 공백 정규화 후 문자열 비교(대소문자는 보존 — 식별자 안전)
+- 트리거는 timing/event/table/statement, 루틴은 type/definition 로 판정
+- 수집은 `INFORMATION_SCHEMA`(KEY_COLUMN_USAGE·REFERENTIAL_CONSTRAINTS·VIEWS·ROUTINES·TRIGGERS·EVENTS)에서
+  `schemaMapper.buildSnapshot` 가 정규화한다. 순수 비교는 스냅샷만 있으면 동작한다.
 
 ### 결정론
 

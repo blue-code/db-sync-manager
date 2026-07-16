@@ -25,11 +25,29 @@ export interface ColumnDiff {
   changes: FieldChange[];
 }
 
+/** 이름 기반 항목(인덱스/FK/객체)의 단순 상태 차이. */
+export interface NamedDiff {
+  name: string;
+  status: DiffStatus;
+}
+
 /** 테이블 단위 차이(구조). */
 export interface TableDiff {
   name: string;
   status: DiffStatus;
   columns: ColumnDiff[];
+  /** 인덱스 차이(수집된 경우). */
+  indexes: NamedDiff[];
+  /** 외래 키 차이(수집된 경우). */
+  foreignKeys: NamedDiff[];
+}
+
+/** DB 레벨 객체 종류. */
+export type ObjectKind = "view" | "routine" | "trigger" | "event";
+
+/** DB 레벨 객체 차이. */
+export interface ObjectDiff extends NamedDiff {
+  kind: ObjectKind;
 }
 
 /** 스키마 전체 비교 결과. */
@@ -37,9 +55,14 @@ export interface SchemaDiff {
   origin: string;
   target: string;
   tables: TableDiff[];
+  /** View/Routine/Trigger/Event 등 DB 레벨 객체 차이. */
+  objects: ObjectDiff[];
 }
 
 /** 비교 결과가 완전히 동일한지 판정한다. */
 export function isSchemaIdentical(diff: SchemaDiff): boolean {
-  return diff.tables.every((t) => t.status === "identical");
+  return (
+    diff.tables.every((t) => t.status === "identical") &&
+    diff.objects.every((o) => o.status === "identical")
+  );
 }

@@ -40,6 +40,16 @@ export interface IndexDef {
   columns: string[];
 }
 
+/** 외래 키 정의. */
+export interface ForeignKeyDef {
+  name: string;
+  columns: string[];
+  refTable: string;
+  refColumns: string[];
+  onUpdate?: string;
+  onDelete?: string;
+}
+
 /** 테이블 정의(구조). 데이터는 별도 DataRow 로 다룬다. */
 export interface TableDef {
   name: string;
@@ -47,14 +57,49 @@ export interface TableDef {
   /** PK 구성 컬럼명. PK가 없으면 빈 배열. */
   primaryKey: string[];
   indexes: IndexDef[];
+  /** 외래 키(선택). 미수집 시 생략. */
+  foreignKeys?: ForeignKeyDef[];
   engine?: string;
   charset?: string;
+}
+
+/** 뷰 정의. */
+export interface ViewDef {
+  name: string;
+  definition: string;
+}
+
+/** 저장 루틴(프로시저/함수) 정의. */
+export interface RoutineDef {
+  name: string;
+  type: "PROCEDURE" | "FUNCTION";
+  definition: string;
+}
+
+/** 트리거 정의. */
+export interface TriggerDef {
+  name: string;
+  table: string;
+  timing: string;
+  event: string;
+  statement: string;
+}
+
+/** 이벤트 정의. */
+export interface EventDef {
+  name: string;
+  definition: string;
 }
 
 /** 데이터베이스 전체 스키마 스냅샷. 비교의 입력 단위다. */
 export interface SchemaSnapshot {
   database: string;
   tables: TableDef[];
+  /** DB 레벨 객체(선택). 미수집 시 생략. */
+  views?: ViewDef[];
+  routines?: RoutineDef[];
+  triggers?: TriggerDef[];
+  events?: EventDef[];
 }
 
 /** 한 행의 데이터. 컬럼명 → 값 매핑. */

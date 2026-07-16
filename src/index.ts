@@ -9,7 +9,12 @@ export type {
   DbEngine,
   ColumnDef,
   IndexDef,
+  ForeignKeyDef,
   TableDef,
+  ViewDef,
+  RoutineDef,
+  TriggerDef,
+  EventDef,
   SchemaSnapshot,
   DataRow,
 } from "./domain/types.js";
@@ -17,6 +22,9 @@ export type {
   DiffStatus,
   FieldChange,
   ColumnDiff,
+  NamedDiff,
+  ObjectDiff,
+  ObjectKind,
   TableDiff,
   SchemaDiff,
 } from "./domain/diff.js";

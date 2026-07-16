@@ -18,9 +18,19 @@ import {
   QUERY_COLUMNS,
   QUERY_INDEXES,
   QUERY_TABLES,
+  QUERY_FOREIGN_KEYS,
+  QUERY_VIEWS,
+  QUERY_ROUTINES,
+  QUERY_TRIGGERS,
+  QUERY_EVENTS,
   type RawColumnRow,
+  type RawEventRow,
+  type RawForeignKeyRow,
   type RawIndexRow,
+  type RawRoutineRow,
   type RawTableRow,
+  type RawTriggerRow,
+  type RawViewRow,
 } from "./informationSchema.js";
 import { buildSnapshot } from "./schemaMapper.js";
 import { runInTransaction } from "./transaction.js";
@@ -70,15 +80,18 @@ export class MysqlConnector implements DbConnector {
   async fetchSchema(config: ConnectionConfig): Promise<SchemaSnapshot> {
     return this.withConnection(config, async (conn) => {
       const db = config.database;
-      const [tables] = await conn.query<RowDataPacket[]>(QUERY_TABLES, [db]);
-      const [columns] = await conn.query<RowDataPacket[]>(QUERY_COLUMNS, [db]);
-      const [indexes] = await conn.query<RowDataPacket[]>(QUERY_INDEXES, [db]);
-      return buildSnapshot(
-        db,
-        tables as unknown as RawTableRow[],
-        columns as unknown as RawColumnRow[],
-        indexes as unknown as RawIndexRow[],
-      );
+      const q = async <T>(sql: string) =>
+        (await conn.query<RowDataPacket[]>(sql, [db]))[0] as unknown as T[];
+      return buildSnapshot(db, {
+        tables: await q<RawTableRow>(QUERY_TABLES),
+        columns: await q<RawColumnRow>(QUERY_COLUMNS),
+        indexes: await q<RawIndexRow>(QUERY_INDEXES),
+        foreignKeys: await q<RawForeignKeyRow>(QUERY_FOREIGN_KEYS),
+        views: await q<RawViewRow>(QUERY_VIEWS),
+        routines: await q<RawRoutineRow>(QUERY_ROUTINES),
+        triggers: await q<RawTriggerRow>(QUERY_TRIGGERS),
+        events: await q<RawEventRow>(QUERY_EVENTS),
+      });
     });
   }
 

@@ -47,8 +47,9 @@
   - [x] Difference Review 행 단위 적용/제외 UI(review→plan→apply, 선택 키 기반)
   - [x] Task 저장·불러오기·삭제 + Scheduler 예약(다음 실행 시각 표시)
     - [ ] 예약 자동 실행(무인) — 자격증명 보관 방식 확정 후(현재는 불러오기 후 수동 실행)
-- [ ] 스키마 확장 비교: Index / FK / Trigger / View / Procedure / Function / Event
+- [x] 스키마 확장 비교: Index / FK / View / Procedure / Function / Trigger / Event
+      (compareSchema 확장 + 매퍼/쿼리 + 실 DB 통합 테스트)
 - [x] 실 DB 통합 테스트 — 임베디드 MySQL(mysql-memory-server)로 커넥터 I/O·트랜잭션·
-      동기화·덤프복원 라운드트립 검증(`npm run test:it`)
+      동기화·덤프복원·확장 비교 검증(`npm run test:it`)
 - [ ] zip 압축(외부 의존성 없는 안전 구현)
 - [ ] 타 DBMS 확장 여지 (PostgreSQL, Oracle) — 방언 계층 분리 전제

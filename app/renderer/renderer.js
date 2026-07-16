@@ -86,19 +86,35 @@ const TAG = {
   removed: ["[-]", "삭제"],
   modified: ["[*]", "변경"],
 };
+/** 하위 항목(컬럼/인덱스/FK) 중 변경분만 들여쓰기 라인으로. */
+function subLines(items, prefix) {
+  return items
+    .filter((x) => x.status !== "identical")
+    .map((x) => `    ${TAG[x.status][0]} ${prefix}${x.name}`);
+}
+
 function renderDiff(diff) {
   const lines = diff.tables.map((t) => {
     const [mark, label] = TAG[t.status];
-    const cols =
+    const sub =
       t.status === "modified"
-        ? t.columns
-            .filter((c) => c.status !== "identical")
-            .map((c) => `    ${TAG[c.status][0]} ${c.name}`)
-            .join("\n")
+        ? [
+            ...subLines(t.columns, ""),
+            ...subLines(t.indexes, "index "),
+            ...subLines(t.foreignKeys, "fk "),
+          ].join("\n")
         : "";
-    return `${mark} ${t.table} (${label})` + (cols ? "\n" + cols : "");
+    return `${mark} ${t.name} (${label})` + (sub ? "\n" + sub : "");
   });
-  showResult(`${diff.origin} ↔ ${diff.target}\n\n` + lines.join("\n"));
+
+  // DB 레벨 객체(뷰/루틴/트리거/이벤트) 변경분.
+  const objs = (diff.objects || [])
+    .filter((o) => o.status !== "identical")
+    .map((o) => `${TAG[o.status][0]} [${o.kind}] ${o.name}`);
+
+  let out = `${diff.origin} ↔ ${diff.target}\n\n` + lines.join("\n");
+  if (objs.length) out += "\n\n-- DB 객체 --\n" + objs.join("\n");
+  showResult(out);
 }
 $("#run-analyze").addEventListener("click", async () => {
   setStatus("스키마 비교 중...", "busy");
