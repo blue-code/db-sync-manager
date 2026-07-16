@@ -27,8 +27,9 @@
 ## Phase 3 — Dump / Restore / 안전장치 ✅ (zip 제외)
 
 - [x] Dump 엔진 (전체 / Schema만 / Data만 / 특정 테이블 / 압축 gzip)
-  - [x] 뷰/루틴/트리거 DDL 덤프·복원(SHOW CREATE·DELIMITER·DEFINER 제거, 실 DB 왕복 검증)
-  - [ ] 이벤트 덤프 / WHERE 조건 덤프 / zip 압축(외부 의존성 없는 안전 구현 검토 필요)
+  - [x] 뷰/루틴/트리거/이벤트 DDL 덤프·복원(SHOW CREATE·DELIMITER·DEFINER 제거, 실 DB 왕복 검증)
+  - [x] 객체 단위 동기화(generateObjectSync: added→CREATE/removed→DROP/modified→DROP+CREATE, 멱등, GUI 버튼)
+  - [ ] WHERE 조건 덤프 / zip 압축(외부 의존성 없는 안전 구현 검토 필요)
 - [x] Restore 엔진 (sql/gz, 데이터만 / 스키마만, DROP 후 복원은 덤프 옵션으로 지원)
 - [x] 동기화 전 자동 백업 (buildBackupDump / createBackup, 기본 gzip)
 - [x] 안전장치: DROP/TRUNCATE/DELETE 경고, Preview SQL, 확인 필요 판정

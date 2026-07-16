@@ -94,6 +94,16 @@ export class MysqlConnector implements DbConnector {
         if (row) r.CREATE_STATEMENT = String(row[col] ?? "");
       }
 
+      const events = await q<RawEventRow>(QUERY_EVENTS);
+      // 이벤트 전체 DDL(스케줄 포함)도 SHOW CREATE 로 얻는다.
+      for (const e of events) {
+        const [rows] = await conn.query<RowDataPacket[]>(
+          `SHOW CREATE EVENT ${quoteId(db)}.${quoteId(e.EVENT_NAME)}`,
+        );
+        const row = rows[0];
+        if (row) e.CREATE_STATEMENT = String(row["Create Event"] ?? "");
+      }
+
       return buildSnapshot(db, {
         tables: await q<RawTableRow>(QUERY_TABLES),
         columns: await q<RawColumnRow>(QUERY_COLUMNS),
@@ -102,7 +112,7 @@ export class MysqlConnector implements DbConnector {
         views: await q<RawViewRow>(QUERY_VIEWS),
         routines,
         triggers: await q<RawTriggerRow>(QUERY_TRIGGERS),
-        events: await q<RawEventRow>(QUERY_EVENTS),
+        events,
       });
     });
   }

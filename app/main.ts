@@ -49,6 +49,8 @@ function registerIpc(): void {
   ipcMain.handle(CHANNELS.reviewSync, (_e, o, t, p) => h.reviewSync(o, t, p));
   ipcMain.handle(CHANNELS.planSync, (_e, o, t, p) => h.planSync(o, t, p));
   ipcMain.handle(CHANNELS.applySync, (_e, o, t, p) => h.applySync(o, t, p));
+  ipcMain.handle(CHANNELS.planObjectSync, (_e, o: ConnForm, t: ConnForm) => h.planObjectSync(o, t));
+  ipcMain.handle(CHANNELS.applyObjectSync, (_e, o: ConnForm, t: ConnForm) => h.applyObjectSync(o, t));
   ipcMain.handle(CHANNELS.buildDump, (_e, o: ConnForm, p: DumpParams) => h.buildDump(o, p));
   ipcMain.handle(CHANNELS.applyRestore, (_e, t, p) => h.applyRestore(t, p));
   ipcMain.handle(CHANNELS.taskSave, (_e, inp) => h.taskSave(inp));

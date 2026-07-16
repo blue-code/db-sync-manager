@@ -117,12 +117,30 @@ function renderDiff(diff) {
   showResult(out);
 }
 $("#run-analyze").addEventListener("click", async () => {
+  disarm();
   setStatus("스키마 비교 중...", "busy");
   showResult("");
   const res = await window.dbsync.analyze(readConn("origin"), readConn("target"));
   if (!res.ok) return setStatus("비교 실패: " + res.message, "err");
   setStatus("비교 완료", "ok");
   renderDiff(res.diff);
+});
+
+// 객체 단위 동기화 (뷰/루틴/트리거/이벤트)
+$("#obj-preview").addEventListener("click", async () => {
+  disarm();
+  setStatus("객체 변경 계산 중...", "busy");
+  const res = await window.dbsync.planObjectSync(readConn("origin"), readConn("target"));
+  if (!res.ok) return setStatus("실패: " + res.message, "err");
+  setStatus(`${res.message} (${res.statementCount}문)`, "ok");
+  showResult(res.preview || "(변경 없음)");
+  if (res.statementCount > 0) armDanger($("#obj-apply"), res.warnings);
+});
+$("#obj-apply").addEventListener("click", async () => {
+  setStatus("객체 동기화 실행 중...", "busy");
+  const res = await window.dbsync.applyObjectSync(readConn("origin"), readConn("target"));
+  disarm();
+  setStatus(res.message, res.ok ? "ok" : "err");
 });
 
 // ----- ② 동기화 -----

@@ -91,8 +91,10 @@ export {
   buildCreateView,
   buildCreateTrigger,
   buildCreateRoutine,
+  buildCreateEvent,
   stripDefiner,
 } from "./dump/objectDdl.js";
+export { generateObjectSync } from "./sync/objectSync.js";
 export { generateDump } from "./dump/dumpGenerator.js";
 export type { DumpMode, DumpOptions, DumpInput } from "./dump/dumpGenerator.js";
 export { autoDumpFilename, extensionFor } from "./dump/filename.js";

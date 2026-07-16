@@ -91,7 +91,10 @@ export interface TriggerDef {
 /** 이벤트 정의. */
 export interface EventDef {
   name: string;
+  /** 본문(비교용). INFORMATION_SCHEMA.EVENT_DEFINITION 기준. */
   definition: string;
+  /** 스케줄까지 포함한 전체 CREATE 문(덤프용, SHOW CREATE 로 수집). */
+  createStatement?: string;
 }
 
 /** 데이터베이스 전체 스키마 스냅샷. 비교의 입력 단위다. */

@@ -42,6 +42,10 @@ const api = {
     ipcRenderer.invoke(CHANNELS.planSync, origin, target, params),
   applySync: (origin: ConnForm, target: ConnForm, params: ApplySyncParams): Promise<ApplyResult> =>
     ipcRenderer.invoke(CHANNELS.applySync, origin, target, params),
+  planObjectSync: (origin: ConnForm, target: ConnForm): Promise<PlanSyncResult> =>
+    ipcRenderer.invoke(CHANNELS.planObjectSync, origin, target),
+  applyObjectSync: (origin: ConnForm, target: ConnForm): Promise<ApplyResult> =>
+    ipcRenderer.invoke(CHANNELS.applyObjectSync, origin, target),
 
   buildDump: (origin: ConnForm, params: DumpParams): Promise<BuildDumpResult> =>
     ipcRenderer.invoke(CHANNELS.buildDump, origin, params),

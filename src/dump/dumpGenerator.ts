@@ -13,6 +13,7 @@ import {
   buildCreateView,
   buildCreateTrigger,
   buildCreateRoutine,
+  buildCreateEvent,
 } from "./objectDdl.js";
 
 export type DumpMode = "schema" | "data" | "all";
@@ -64,6 +65,11 @@ function objectBlocks(snapshot: SchemaSnapshot, dropFirst: boolean): string[] {
   for (const t of snapshot.triggers ?? []) {
     const drop = dropFirst ? `DROP TRIGGER IF EXISTS ${quoteId(t.name)};\n` : "";
     blocks.push(`-- trigger ${t.name}\n` + drop + delimited(buildCreateTrigger(t)));
+  }
+  for (const e of snapshot.events ?? []) {
+    if (!e.createStatement) continue; // 전체 DDL 미수집 이벤트는 건너뛴다.
+    const drop = dropFirst ? `DROP EVENT IF EXISTS ${quoteId(e.name)};\n` : "";
+    blocks.push(`-- event ${e.name}\n` + drop + delimited(buildCreateEvent(e)));
   }
 
   return blocks;

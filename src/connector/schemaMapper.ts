@@ -140,10 +140,11 @@ export function buildSnapshot(database: string, raw: RawSchema): SchemaSnapshot 
     event: t.EVENT_MANIPULATION,
     statement: t.ACTION_STATEMENT,
   }));
-  const events: EventDef[] = (raw.events ?? []).map((e) => ({
-    name: e.EVENT_NAME,
-    definition: e.EVENT_DEFINITION ?? "",
-  }));
+  const events: EventDef[] = (raw.events ?? []).map((e) => {
+    const def: EventDef = { name: e.EVENT_NAME, definition: e.EVENT_DEFINITION ?? "" };
+    if (e.CREATE_STATEMENT) def.createStatement = e.CREATE_STATEMENT;
+    return def;
+  });
 
   return { database, tables, views, routines, triggers, events };
 }

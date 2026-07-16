@@ -3,6 +3,7 @@ import {
   buildCreateView,
   buildCreateTrigger,
   buildCreateRoutine,
+  buildCreateEvent,
   stripDefiner,
 } from "../src/dump/objectDdl.js";
 
@@ -43,5 +44,18 @@ describe("buildCreateRoutine", () => {
   });
   it("전체 DDL 이 없으면 예외를 던진다", () => {
     expect(() => buildCreateRoutine({ name: "p", type: "PROCEDURE", definition: "" })).toThrow();
+  });
+});
+
+describe("buildCreateEvent", () => {
+  it("전체 DDL(createStatement)에서 DEFINER 를 제거해 사용한다", () => {
+    const ddl = buildCreateEvent({
+      name: "ev", definition: "DO SELECT 1",
+      createStatement: "CREATE DEFINER=`root`@`localhost` EVENT `ev` ON SCHEDULE EVERY 1 DAY DO SELECT 1",
+    });
+    expect(ddl).toBe("CREATE EVENT `ev` ON SCHEDULE EVERY 1 DAY DO SELECT 1");
+  });
+  it("전체 DDL 이 없으면 예외를 던진다", () => {
+    expect(() => buildCreateEvent({ name: "e", definition: "" })).toThrow();
   });
 });

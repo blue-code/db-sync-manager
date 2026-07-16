@@ -30,6 +30,7 @@ beforeAll(async () => {
       "CREATE VIEW src_db.v_products AS SELECT id, title FROM src_db.products",
       "CREATE PROCEDURE src_db.sp_count() BEGIN SELECT COUNT(*) FROM src_db.products; END",
       "CREATE TRIGGER src_db.trg_products BEFORE INSERT ON src_db.products FOR EACH ROW SET NEW.title = NEW.title",
+      "CREATE EVENT src_db.ev_clean ON SCHEDULE EVERY 1 DAY DO DELETE FROM src_db.products WHERE price < 0",
       "CREATE DATABASE IF NOT EXISTS restore_db",
       "CREATE DATABASE IF NOT EXISTS restore_db2",
     ]);
@@ -99,5 +100,6 @@ describe("Dump → Restore 라운드트립(실 DB)", () => {
     expect(restored.views?.some((v) => v.name === "v_products")).toBe(true);
     expect(restored.routines?.some((r) => r.name === "sp_count")).toBe(true);
     expect(restored.triggers?.some((t) => t.name === "trg_products")).toBe(true);
+    expect(restored.events?.some((e) => e.name === "ev_clean")).toBe(true);
   });
 });

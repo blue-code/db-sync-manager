@@ -73,6 +73,8 @@ export interface RawTriggerRow {
 export interface RawEventRow {
   EVENT_NAME: string;
   EVENT_DEFINITION: string | null;
+  /** SHOW CREATE 로 채우는 전체 DDL(덤프용). */
+  CREATE_STATEMENT?: string;
 }
 
 /** 대상 스키마의 컬럼을 순서대로 조회한다. */

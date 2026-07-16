@@ -26,6 +26,8 @@ export const CHANNELS = {
   reviewSync: "dbsync:reviewSync",
   planSync: "dbsync:planSync",
   applySync: "dbsync:applySync",
+  planObjectSync: "dbsync:planObjectSync",
+  applyObjectSync: "dbsync:applyObjectSync",
   buildDump: "dbsync:buildDump",
   saveDump: "dbsync:saveDump",
   planRestore: "dbsync:planRestore",

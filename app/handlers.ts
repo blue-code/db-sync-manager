@@ -14,6 +14,7 @@ import {
   buildSyncPlan,
   generatePlanSql,
   generateSyncSql,
+  generateObjectSync,
   analyzeStatements,
   previewSql,
   generateDump,
@@ -297,6 +298,41 @@ export function createHandlers(deps: HandlerDeps) {
       } catch (err) {
         const message = toMessage(err);
         await record(kind, "failure", origin, target, { error: message });
+        return { ok: false, message };
+      }
+    },
+
+    /** 객체(뷰/루틴/트리거/이벤트) 동기화 미리보기. */
+    async planObjectSync(origin: ConnForm, target: ConnForm): Promise<PlanSyncResult> {
+      try {
+        const [o, t] = await Promise.all([connector.fetchSchema(origin), connector.fetchSchema(target)]);
+        const statements = generateObjectSync(o, t);
+        const warnings = analyzeStatements(statements);
+        return {
+          ok: true,
+          message: statements.length ? "객체 변경 미리보기" : "객체 차이가 없습니다.",
+          preview: clipPreview(previewSql(statements)),
+          warnings,
+          destructive: warnings.length > 0,
+          statementCount: statements.length,
+        };
+      } catch (err) {
+        return { ok: false, message: toMessage(err) };
+      }
+    },
+
+    /** 객체 동기화 실행(Target 의 객체를 Origin 에 맞춤). */
+    async applyObjectSync(origin: ConnForm, target: ConnForm): Promise<ApplyResult> {
+      try {
+        const [o, t] = await Promise.all([connector.fetchSchema(origin), connector.fetchSchema(target)]);
+        const statements = generateObjectSync(o, t);
+        if (statements.length === 0) return { ok: true, message: "객체 차이가 없습니다.", executed: 0 };
+        const executed = await connector.execute(target, statements);
+        await record("syncCoarse", "success", origin, target, { counts: { statements: executed } });
+        return { ok: true, message: `객체 동기화 완료 (${executed}문)`, executed };
+      } catch (err) {
+        const message = toMessage(err);
+        await record("syncCoarse", "failure", origin, target, { error: message });
         return { ok: false, message };
       }
     },

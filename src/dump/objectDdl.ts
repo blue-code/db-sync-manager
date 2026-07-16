@@ -6,7 +6,7 @@
  * 이식성을 위해 DEFINER 절은 제거한다(대상 서버에 동일 계정이 없을 수 있음).
  */
 
-import type { RoutineDef, TriggerDef, ViewDef } from "../domain/types.js";
+import type { EventDef, RoutineDef, TriggerDef, ViewDef } from "../domain/types.js";
 import { quoteId } from "../sync/sqlDialect.js";
 
 /** DEFINER=`user`@`host` 절을 제거한다(이식성). */
@@ -36,4 +36,14 @@ export function buildCreateRoutine(routine: RoutineDef, dropFirst = false): stri
   const create = stripDefiner(routine.createStatement).trim();
   if (!dropFirst) return create;
   return `DROP ${routine.type} IF EXISTS ${quoteId(routine.name)};\n${create}`;
+}
+
+/** CREATE EVENT (SHOW CREATE 전체 문 사용, DEFINER 제거). */
+export function buildCreateEvent(event: EventDef, dropFirst = false): string {
+  if (!event.createStatement) {
+    throw new Error(`이벤트 전체 DDL(createStatement)이 없습니다: ${event.name}`);
+  }
+  const create = stripDefiner(event.createStatement).trim();
+  if (!dropFirst) return create;
+  return `DROP EVENT IF EXISTS ${quoteId(event.name)};\n${create}`;
 }

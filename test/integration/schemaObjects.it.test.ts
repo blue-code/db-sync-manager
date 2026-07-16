@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { MysqlConnector, compareSchema } from "../../src/index.js";
+import { MysqlConnector, compareSchema, generateObjectSync } from "../../src/index.js";
 import { bootMysql, conf, runSetup, type MysqlInstance } from "./harness.js";
 
 const connector = new MysqlConnector();
@@ -29,6 +29,7 @@ beforeAll(async () => {
       `CREATE VIEW ext_a.v_users AS SELECT id, name FROM ext_a.users`,
       `CREATE TRIGGER ext_a.trg_users BEFORE INSERT ON ext_a.users
          FOR EACH ROW SET NEW.name = NEW.name`,
+      `CREATE EVENT ext_a.ev_daily ON SCHEDULE EVERY 1 DAY DO SELECT 1`,
     ]);
     up = true;
   } catch (err) {
@@ -63,5 +64,24 @@ describe("스키마 확장 비교(실 DB)", () => {
     const obj = (name: string) => diff.objects.find((o) => o.name === name);
     expect(obj("v_users")).toMatchObject({ kind: "view", status: "added" });
     expect(obj("trg_users")).toMatchObject({ kind: "trigger", status: "added" });
+    expect(obj("ev_daily")).toMatchObject({ kind: "event", status: "added" });
+  });
+
+  it("객체 단위 동기화: Target 에 뷰/트리거/이벤트를 실제로 생성한다", async (ctx) => {
+    if (!up) return ctx.skip();
+    const a = await connector.fetchSchema(conf(port, "ext_a"));
+    const b = await connector.fetchSchema(conf(port, "ext_b"));
+
+    const sql = generateObjectSync(a, b);
+    expect(sql.length).toBeGreaterThan(0);
+    await connector.execute(conf(port, "ext_b"), sql);
+
+    const after = await connector.fetchSchema(conf(port, "ext_b"));
+    expect(after.views?.some((v) => v.name === "v_users")).toBe(true);
+    expect(after.triggers?.some((t) => t.name === "trg_users")).toBe(true);
+    expect(after.events?.some((e) => e.name === "ev_daily")).toBe(true);
+
+    // 재실행 시 변경 없음(멱등): 이제 동일하므로 SQL 이 비어야 한다.
+    expect(generateObjectSync(await connector.fetchSchema(conf(port, "ext_a")), after)).toEqual([]);
   });
 });
