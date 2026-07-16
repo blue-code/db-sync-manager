@@ -54,6 +54,14 @@ export {
 export type { GenerateOptions } from "./sync/sqlGenerator.js";
 export { quoteId, quoteValue, escapeString } from "./sync/sqlDialect.js";
 
+// SQL 방언 추상화(다중 DBMS 기반)
+export {
+  mysqlDialect,
+  postgresDialect,
+  dialectFor,
+} from "./dialect/dialect.js";
+export type { SqlDialect } from "./dialect/dialect.js";
+
 // Sync Planner
 export { buildSyncPlan, generatePlanSql } from "./sync/syncPlanner.js";
 export type {

@@ -57,4 +57,7 @@
 - [x] 실 DB 통합 테스트 — 임베디드 MySQL(mysql-memory-server)로 커넥터 I/O·트랜잭션·
       동기화·덤프복원·확장 비교 검증(`npm run test:it`)
 - [ ] zip 압축(외부 의존성 없는 안전 구현)
-- [ ] 타 DBMS 확장 여지 (PostgreSQL, Oracle) — 방언 계층 분리 전제
+- [~] 타 DBMS 확장 (PostgreSQL, Oracle)
+  - [x] 방언 계층 기반: SqlDialect 인터페이스 + mysql/postgres 표기 방언(유닛 검증)
+  - [ ] PostgresConnector(pg) + pg_catalog 매퍼 + 생성기 방언화 + PG 통합 테스트
+        — 검증용 PG 서버 확보 후(docs/spec/08-multi-dialect.md)

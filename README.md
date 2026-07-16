@@ -115,6 +115,7 @@ npm run app:start  # app:build 후 Electron 실행
 - [Dump / Restore / 안전장치 스펙](docs/spec/05-dump-restore-safety.md)
 - [Task / History / Scheduler / 로깅 스펙](docs/spec/06-task-history-scheduler.md)
 - [GUI (Electron) 스펙](docs/spec/07-gui.md)
+- [다중 DBMS(방언) 확장 스펙](docs/spec/08-multi-dialect.md)
 - [로드맵](docs/roadmap.md)
 
 ## 라이선스
