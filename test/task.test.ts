@@ -50,6 +50,22 @@ describe("validateTask", () => {
     const task = createTask({ name: "s", kind: "syncFine", origin, target, mode: "overwrite" }, now);
     expect(validateTask(task).some((e) => /overwrite/.test(e))).toBe(true);
   });
+
+  it("잘못된 스케줄이 붙으면 오류를 낸다", () => {
+    const task = createTask(
+      { name: "s", kind: "backup", origin, schedule: { kind: "daily", hour: 99, minute: 0 } },
+      now,
+    );
+    expect(validateTask(task).some((e) => /hour/.test(e))).toBe(true);
+  });
+
+  it("정상 스케줄은 통과한다", () => {
+    const task = createTask(
+      { name: "s", kind: "backup", origin, schedule: { kind: "weekly", weekday: 0, hour: 2, minute: 0 } },
+      now,
+    );
+    expect(validateTask(task)).toEqual([]);
+  });
 });
 
 describe("upsertTask / removeTask", () => {

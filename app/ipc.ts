@@ -14,6 +14,9 @@ import type {
   SafetyWarning,
   DataDiffSummary,
   RowDiffStatus,
+  Task,
+  TaskKind,
+  Schedule,
 } from "../src/index.js";
 
 export const CHANNELS = {
@@ -28,6 +31,9 @@ export const CHANNELS = {
   planRestore: "dbsync:planRestore",
   applyRestore: "dbsync:applyRestore",
   listHistory: "dbsync:listHistory",
+  taskList: "dbsync:taskList",
+  taskSave: "dbsync:taskSave",
+  taskRemove: "dbsync:taskRemove",
 } as const;
 
 /** 렌더러 폼이 넘겨주는 접속 정보(비밀번호 포함, 저장하지 않음). */
@@ -153,4 +159,36 @@ export interface PlanRestoreResult {
 
 export interface ApplyRestoreParams extends RestoreOptionsForm {
   filePath: string;
+}
+
+// ----- Task / Scheduler -----
+
+/** 저장 요청. 접속은 폼값(비밀번호 포함 가능) — main 이 저장 전 제거한다. */
+export interface TaskSaveInput {
+  name: string;
+  kind: TaskKind;
+  origin?: ConnForm;
+  target?: ConnForm;
+  table?: string;
+  mode?: SyncMode;
+  includeDeletes?: boolean;
+  dumpMode?: DumpMode;
+  tables?: string[];
+  schedule?: Schedule;
+}
+
+/** 목록 항목: 저장된 Task + 계산된 다음 실행 시각. */
+export interface TaskListItem extends Task {
+  nextRunAt?: string;
+}
+
+export interface TaskListResult {
+  ok: boolean;
+  message: string;
+  tasks?: TaskListItem[];
+}
+
+export interface TaskMutateResult {
+  ok: boolean;
+  message: string;
 }

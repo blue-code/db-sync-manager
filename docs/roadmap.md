@@ -45,7 +45,8 @@
   - [x] 코어 엔진 IPC 결선(testConnection/analyze/listHistory), contextIsolation + CSP
   - [x] Sync/Dump/Restore 화면 결선(plan→apply 2단계, 안전장치·Preview·자동 백업 반영)
   - [x] Difference Review 행 단위 적용/제외 UI(review→plan→apply, 선택 키 기반)
-  - [ ] Task 저장·재실행, Scheduler 설정 화면
+  - [x] Task 저장·불러오기·삭제 + Scheduler 예약(다음 실행 시각 표시)
+    - [ ] 예약 자동 실행(무인) — 자격증명 보관 방식 확정 후(현재는 불러오기 후 수동 실행)
 - [ ] 스키마 확장 비교: Index / FK / Trigger / View / Procedure / Function / Event
 - [x] 실 DB 통합 테스트 — 임베디드 MySQL(mysql-memory-server)로 커넥터 I/O·트랜잭션·
       동기화·덤프복원 라운드트립 검증(`npm run test:it`)

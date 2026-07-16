@@ -23,6 +23,9 @@ import {
   type SaveDumpResult,
   type PlanRestoreResult,
   type ApplyRestoreParams,
+  type TaskSaveInput,
+  type TaskListResult,
+  type TaskMutateResult,
 } from "./ipc.js";
 
 const api = {
@@ -50,6 +53,12 @@ const api = {
     ipcRenderer.invoke(CHANNELS.applyRestore, target, params),
 
   listHistory: (): Promise<unknown[]> => ipcRenderer.invoke(CHANNELS.listHistory),
+
+  taskList: (): Promise<TaskListResult> => ipcRenderer.invoke(CHANNELS.taskList),
+  taskSave: (input: TaskSaveInput): Promise<TaskMutateResult> =>
+    ipcRenderer.invoke(CHANNELS.taskSave, input),
+  taskRemove: (id: string): Promise<TaskMutateResult> =>
+    ipcRenderer.invoke(CHANNELS.taskRemove, id),
 };
 
 contextBridge.exposeInMainWorld("dbsync", api);

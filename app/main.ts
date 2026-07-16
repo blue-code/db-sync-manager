@@ -26,6 +26,13 @@ import {
   buildHistoryEntry,
   HistoryStore,
   stripPassword,
+  createTask,
+  validateTask,
+  upsertTask,
+  removeTask,
+  TaskStore,
+  nextRun,
+  type TaskInput,
   type DataRow,
   type TableDef,
   type SafetyWarning,
@@ -50,6 +57,10 @@ import {
   type SaveDumpResult,
   type PlanRestoreResult,
   type ApplyRestoreParams,
+  type TaskSaveInput,
+  type TaskListResult,
+  type TaskListItem,
+  type TaskMutateResult,
 } from "./ipc.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -83,6 +94,10 @@ function toMessage(err: unknown): string {
 
 function historyStore(): HistoryStore {
   return new HistoryStore(join(app.getPath("userData"), "history.jsonl"));
+}
+
+function taskStore(): TaskStore {
+  return new TaskStore(join(app.getPath("userData"), "tasks.json"));
 }
 
 /** 미리보기가 너무 길면 잘라낸다(렌더러 부하 방지). */
@@ -433,6 +448,59 @@ function registerIpc(): void {
       }
     },
   );
+
+  // ----- Task / Scheduler -----
+
+  const buildTaskInput = (inp: TaskSaveInput): TaskInput => {
+    const t: TaskInput = { name: inp.name, kind: inp.kind };
+    if (inp.origin) t.origin = stripPassword(inp.origin); // 비밀번호 제거 후 저장
+    if (inp.target) t.target = stripPassword(inp.target);
+    if (inp.table !== undefined) t.table = inp.table;
+    if (inp.mode !== undefined) t.mode = inp.mode;
+    if (inp.includeDeletes !== undefined) t.includeDeletes = inp.includeDeletes;
+    if (inp.dumpMode !== undefined) t.dumpMode = inp.dumpMode;
+    if (inp.tables !== undefined) t.tables = inp.tables;
+    if (inp.schedule !== undefined) t.schedule = inp.schedule;
+    return t;
+  };
+
+  ipcMain.handle(CHANNELS.taskSave, async (_e, inp: TaskSaveInput): Promise<TaskMutateResult> => {
+    try {
+      const task = createTask(buildTaskInput(inp), new Date());
+      const errors = validateTask(task);
+      if (errors.length) return { ok: false, message: errors.join(" / ") };
+      const tasks = await taskStore().load();
+      await taskStore().save(upsertTask(tasks, task, new Date()));
+      return { ok: true, message: `저장됨: ${task.name}` };
+    } catch (err) {
+      return { ok: false, message: toMessage(err) };
+    }
+  });
+
+  ipcMain.handle(CHANNELS.taskList, async (): Promise<TaskListResult> => {
+    try {
+      const tasks = await taskStore().load();
+      const now = new Date();
+      const items: TaskListItem[] = tasks.map((t) => {
+        const item: TaskListItem = { ...t };
+        if (t.schedule) item.nextRunAt = nextRun(t.schedule, now).toISOString();
+        return item;
+      });
+      return { ok: true, message: `${items.length}개 작업`, tasks: items };
+    } catch (err) {
+      return { ok: false, message: toMessage(err) };
+    }
+  });
+
+  ipcMain.handle(CHANNELS.taskRemove, async (_e, id: string): Promise<TaskMutateResult> => {
+    try {
+      const tasks = await taskStore().load();
+      await taskStore().save(removeTask(tasks, id));
+      return { ok: true, message: "삭제됨" };
+    } catch (err) {
+      return { ok: false, message: toMessage(err) };
+    }
+  });
 
   ipcMain.handle(CHANNELS.listHistory, async () => historyStore().list());
 }

@@ -65,6 +65,7 @@ function showPanel(name) {
   disarm();
   setStatus("");
   showResult("");
+  if (name === "task") refreshTasks(); // 진입 시 목록 자동 로드(함수 선언 호이스팅)
 }
 $$(".actions .tab").forEach((b) => b.addEventListener("click", () => showPanel(b.dataset.panel)));
 
@@ -310,5 +311,124 @@ $("#history-load").addEventListener("click", async () => {
       : "기록이 없습니다.",
   );
 });
+
+// ----- ⑥ Task / Scheduler -----
+let taskCache = [];
+
+/** 예약 종류에 따라 입력 필드를 토글한다. */
+function updateSchedFields() {
+  const k = $("#task-sched").value;
+  $("#sched-interval").hidden = k !== "interval";
+  $("#sched-hm").hidden = !(k === "daily" || k === "weekly");
+  $("#sched-weekday-wrap").hidden = k !== "weekly";
+}
+$("#task-sched").addEventListener("change", updateSchedFields);
+
+/** 폼 값으로 Schedule 객체를 만든다(없으면 undefined). */
+function buildSchedule() {
+  const k = $("#task-sched").value;
+  if (k === "none") return undefined;
+  if (k === "interval") return { kind: "interval", everyMinutes: Number($("#sched-min").value) || 60 };
+  const hour = Number($("#sched-hour").value) || 0;
+  const minute = Number($("#sched-minute").value) || 0;
+  if (k === "daily") return { kind: "daily", hour, minute };
+  return { kind: "weekly", weekday: Number($("#sched-weekday").value), hour, minute };
+}
+
+/** 접속 폼에 저장된 값(비밀번호 제외)을 채운다. */
+function setConnForm(role, saved) {
+  if (!saved) return;
+  const form = document.querySelector(`.conn-card[data-role="${role}"]`);
+  ["host", "port", "user", "database"].forEach((n) => {
+    if (saved[n] !== undefined) form.querySelector(`[name="${n}"]`).value = saved[n];
+  });
+}
+
+/** 저장된 Task 를 폼/컨트롤에 불러온다(비밀번호는 사용자가 입력). */
+function loadTask(t) {
+  setConnForm("origin", t.origin);
+  setConnForm("target", t.target);
+  $("#task-kind").value = t.kind;
+  if (t.table) {
+    const sel = $("#sync-table");
+    if (![...sel.options].some((o) => o.value === t.table)) sel.add(new Option(t.table, t.table));
+    sel.value = t.table;
+  }
+  if (t.mode) $("#sync-mode").value = t.mode;
+  $("#sync-deletes").checked = !!t.includeDeletes;
+  if (t.dumpMode) $("#dump-mode").value = t.dumpMode;
+  if (t.tables) $("#dump-tables").value = t.tables.join(", ");
+
+  const s = t.schedule;
+  $("#task-sched").value = s ? s.kind : "none";
+  if (s?.kind === "interval") $("#sched-min").value = s.everyMinutes;
+  if (s?.kind === "daily" || s?.kind === "weekly") {
+    $("#sched-hour").value = s.hour;
+    $("#sched-minute").value = s.minute;
+  }
+  if (s?.kind === "weekly") $("#sched-weekday").value = s.weekday;
+  updateSchedFields();
+
+  setStatus(`'${t.name}' 불러옴 — 폼에 비밀번호를 입력한 뒤 해당 패널에서 실행하세요.`, "ok");
+}
+
+$("#task-save").addEventListener("click", async () => {
+  const name = $("#task-name").value.trim();
+  if (!name) return setStatus("작업 이름을 입력하세요.", "err");
+  const kind = $("#task-kind").value;
+
+  const input = { name, kind, origin: readConn("origin"), target: readConn("target") };
+  const sched = buildSchedule();
+  if (sched) input.schedule = sched;
+  const table = $("#sync-table").value;
+  if (table) input.table = table;
+  // syncCoarse 는 항상 덮어쓰기 모드로 고정한다.
+  input.mode = kind === "syncCoarse" ? "overwrite" : $("#sync-mode").value;
+  input.includeDeletes = $("#sync-deletes").checked;
+  input.dumpMode = $("#dump-mode").value;
+  const dt = $("#dump-tables").value.split(",").map((s) => s.trim()).filter(Boolean);
+  if (dt.length) input.tables = dt;
+
+  const res = await window.dbsync.taskSave(input);
+  setStatus(res.message, res.ok ? "ok" : "err");
+  if (res.ok) refreshTasks();
+});
+
+async function refreshTasks() {
+  const listEl = $("#task-list");
+  const res = await window.dbsync.taskList();
+  if (!res.ok) return setStatus("목록 실패: " + res.message, "err");
+  taskCache = res.tasks;
+
+  listEl.innerHTML = res.tasks.length
+    ? res.tasks
+        .map((t, i) => {
+          const dir = (t.origin?.database || "-") + (t.target ? " → " + t.target.database : "");
+          const sched = t.nextRunAt ? ` · 다음 실행 ${escapeHtml(t.nextRunAt)}` : "";
+          return (
+            `<div class="rv-row"><span class="tag modified">[${escapeHtml(t.kind)}]</span>` +
+            `<span class="rv-key">${escapeHtml(t.name)}</span>` +
+            `<span class="rv-change">${escapeHtml(dir)}${sched}</span>` +
+            `<button class="secondary tk-load" data-idx="${i}">불러오기</button>` +
+            `<button class="secondary tk-del" data-id="${escapeHtml(t.id)}">삭제</button></div>`
+          );
+        })
+        .join("")
+    : '<div class="rv-row">저장된 작업이 없습니다.</div>';
+
+  listEl.querySelectorAll(".tk-load").forEach((b) =>
+    b.addEventListener("click", () => loadTask(taskCache[Number(b.dataset.idx)])),
+  );
+  listEl.querySelectorAll(".tk-del").forEach((b) =>
+    b.addEventListener("click", async () => {
+      const r = await window.dbsync.taskRemove(b.dataset.id);
+      setStatus(r.message, r.ok ? "ok" : "err");
+      refreshTasks();
+    }),
+  );
+  setStatus(res.message, "ok");
+}
+$("#task-load-list").addEventListener("click", refreshTasks);
+updateSchedFields();
 
 showPanel("analyze");

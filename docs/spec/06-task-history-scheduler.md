@@ -12,7 +12,8 @@ Task/History 에는 **비밀번호를 저장하지 않는다**(host/port/user/da
 
 `src/task/task.ts` (순수) · `src/task/taskStore.ts` (I/O)
 
-- `Task` = { id, name, kind, origin/target(SavedConnection), tables, mode, dumpMode, includeDeletes, updateColumns, createdAt }
+- `Task` = { id, name, kind, origin/target(SavedConnection), table(sync 단일)/tables(dump 목록), mode, dumpMode, includeDeletes, updateColumns, schedule?, createdAt }
+- `schedule?`(Scheduler 연동): 있으면 `validateTask` 가 `validateSchedule` 로 함께 검증
 - `kind`: `syncCoarse` / `syncFine` / `dump` / `restore` / `backup`
 - `createTask(input, now, id?)` — 시각/ID 외부 주입(재현성)
 - `generateTaskId(name, date)` → `task_YYYYMMDD_slug`

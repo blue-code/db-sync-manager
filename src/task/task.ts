@@ -11,6 +11,7 @@
 import type { ConnectionConfig } from "../domain/types.js";
 import type { SyncMode } from "../sync/syncMode.js";
 import type { DumpMode } from "../dump/dumpGenerator.js";
+import { validateSchedule, type Schedule } from "../scheduler/schedule.js";
 
 export type TaskKind = "syncCoarse" | "syncFine" | "dump" | "restore" | "backup";
 
@@ -25,11 +26,16 @@ export interface Task {
   origin?: SavedConnection;
   /** 대상(쓰기 대상). restore/sync 에서 사용. */
   target?: SavedConnection;
+  /** 동기화 대상 단일 테이블(sync). */
+  table?: string;
+  /** 덤프 대상 테이블 목록(dump). 비면 전체. */
   tables?: string[];
   mode?: SyncMode;
   dumpMode?: DumpMode;
   includeDeletes?: boolean;
   updateColumns?: string[];
+  /** 예약 실행 스케줄(있으면 Scheduler 가 다음 실행 시각을 계산). */
+  schedule?: Schedule;
   createdAt: string;
   updatedAt?: string;
 }
@@ -89,6 +95,9 @@ export function validateTask(task: Task): string[] {
   if (needsMode && !task.mode) errors.push(`${task.kind} 는 mode 가 필요하다`);
   if (task.kind === "syncFine" && task.mode === "overwrite") {
     errors.push("syncFine 은 overwrite 를 지원하지 않는다(syncCoarse 사용)");
+  }
+  if (task.schedule) {
+    errors.push(...validateSchedule(task.schedule));
   }
   return errors;
 }
