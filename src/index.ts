@@ -67,6 +67,33 @@ export {
 } from "./sync/filters.js";
 export type { RowPredicate } from "./sync/filters.js";
 
+// 안전장치
+export {
+  analyzeStatements,
+  analyzePlan,
+  confirmationRequired,
+  previewSql,
+} from "./sync/safety.js";
+export type { SafetyWarning, Severity } from "./sync/safety.js";
+
+// Dump / Restore / Backup
+export { buildCreateTable } from "./dump/ddlGenerator.js";
+export type { CreateTableOptions } from "./dump/ddlGenerator.js";
+export { generateDump } from "./dump/dumpGenerator.js";
+export type { DumpMode, DumpOptions, DumpInput } from "./dump/dumpGenerator.js";
+export { autoDumpFilename, extensionFor } from "./dump/filename.js";
+export type { Compression } from "./dump/filename.js";
+export { splitStatements } from "./dump/sqlSplit.js";
+export {
+  writeDumpFile,
+  readDumpFile,
+  detectCompression,
+} from "./dump/dumpFile.js";
+export { planRestore, restore } from "./dump/restore.js";
+export type { RestoreOptions } from "./dump/restore.js";
+export { buildBackupDump, createBackup } from "./dump/backup.js";
+export type { BackupOptions, BackupResult } from "./dump/backup.js";
+
 // 커넥터 포트 & MySQL 구현
 export type { DbConnector } from "./connector/DbConnector.js";
 export { MysqlConnector } from "./connector/mysqlConnector.js";

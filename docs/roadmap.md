@@ -24,12 +24,13 @@
 - [x] 필터: 동등/PK 범위 / 날짜 범위 / 특정 컬럼만(pickColumns)
 - [x] Difference Review 모델 (select 적용/제외, 건수 요약, destructive 표시)
 
-## Phase 3 — Dump / Restore / 안전장치
+## Phase 3 — Dump / Restore / 안전장치 ✅ (zip 제외)
 
-- [ ] Dump 엔진 (전체 / Schema만 / Data만 / 특정 테이블 / WHERE / 압축 gz·zip)
-- [ ] Restore 엔진 (sql/gz/zip, DROP 후 복원 / 기존 유지 / 데이터만 / 스키마만)
-- [ ] 동기화 전 자동 백업
-- [ ] 안전장치: DELETE 포함 시 경고, Preview SQL
+- [x] Dump 엔진 (전체 / Schema만 / Data만 / 특정 테이블 / 압축 gzip)
+  - [ ] WHERE 조건 덤프(필터 모듈과 결합 예정) / zip 압축(외부 의존성 없는 안전 구현 검토 필요)
+- [x] Restore 엔진 (sql/gz, 데이터만 / 스키마만, DROP 후 복원은 덤프 옵션으로 지원)
+- [x] 동기화 전 자동 백업 (buildBackupDump / createBackup, 기본 gzip)
+- [x] 안전장치: DROP/TRUNCATE/DELETE 경고, Preview SQL, 확인 필요 판정
 
 ## Phase 4 — 운영 기능
 
