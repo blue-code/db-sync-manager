@@ -10,6 +10,8 @@ export interface RecentConnection {
   port: number;
   user: string;
   database: string;
+  /** SSL 사용 여부(기억용). */
+  ssl?: boolean;
 }
 
 /** 접속을 식별하는 키(같은 대상은 하나로 취급). */

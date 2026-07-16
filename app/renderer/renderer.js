@@ -21,6 +21,7 @@ function readConn(role) {
     user: get("user"),
     password: get("password"),
     database: get("database"),
+    ssl: form.querySelector('[name="ssl"]').checked,
   };
 }
 
@@ -119,6 +120,7 @@ function fillConnForm(role, c) {
   ["host", "port", "user", "database"].forEach((n) => {
     if (c[n] !== undefined && c[n] !== null) form.querySelector(`[name="${n}"]`).value = c[n];
   });
+  form.querySelector('[name="ssl"]').checked = !!c.ssl;
 }
 
 function populateRecents(recents) {

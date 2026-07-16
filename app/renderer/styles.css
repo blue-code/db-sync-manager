@@ -134,6 +134,7 @@ button.disabled {
   min-height: 22px;
   font-size: 13px;
   margin-bottom: 10px;
+  white-space: pre-wrap; /* toMessage 의 "원인:" 줄바꿈까지 표시 */
 }
 .status.ok {
   color: var(--ok);
@@ -230,6 +231,12 @@ button.danger {
 }
 .conn-card .recent-wrap {
   grid-column: 1 / -1;
+}
+.conn-card .ssl-row {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
 }
 .conn-card .recent-pick {
   background: #1c2027;

@@ -38,7 +38,7 @@ import { quoteId } from "../sync/sqlDialect.js";
 
 /** ConnectionConfig → mysql2 접속 옵션. */
 function toConnectionOptions(config: ConnectionConfig): mysql.ConnectionOptions {
-  return {
+  const opts: mysql.ConnectionOptions = {
     host: config.host,
     port: config.port,
     user: config.user,
@@ -52,6 +52,9 @@ function toConnectionOptions(config: ConnectionConfig): mysql.ConnectionOptions 
     // 접속 불가한 호스트에서 무한 대기하지 않도록 8초 제한(연결 테스트 응답성).
     connectTimeout: 8000,
   };
+  // SSL: 접속은 하되 서버 인증서는 검증하지 않는다(self-signed 허용).
+  if (config.ssl) opts.ssl = { rejectUnauthorized: false };
+  return opts;
 }
 
 export class MysqlConnector implements DbConnector {

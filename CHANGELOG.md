@@ -2,6 +2,18 @@
 
 본 프로젝트의 주요 변경을 기록한다. 형식은 Keep a Changelog 를 따른다.
 
+## [0.2.2] - 2026-07-16
+
+### 추가
+- **SSL 접속 옵션**: 접속 카드에 "SSL 사용 (인증서 미검증)" 체크박스.
+  mariadb 클라이언트의 `--ssl --ssl-verify-server-cert=0` 과 동일하게, SSL 로 접속하되
+  서버 인증서를 검증하지 않는다(self-signed 서버 대응). 설정은 최근 접속에 함께 기억된다.
+
+### 개선
+- **오류 원인 명확화**: 연결 실패 시 실제 오류를 삼키지 않고 그대로 보여준다.
+  SSL 필요/인증서 오류/타임아웃/인증 실패 등은 한글 힌트 + 원문(원인)을 함께 표시.
+  (기존에는 "접속 실패"만 떠서 원인 파악이 불가)
+
 ## [0.2.1] - 2026-07-16
 
 ### 개선
@@ -46,5 +58,6 @@
 - 이벤트 자동 실행 스케줄러는 앱이 열려 있는 동안만 동작
 - WHERE 조건 덤프 / Oracle 미지원
 
+[0.2.2]: https://github.com/blue-code/db-sync-manager/releases/tag/v0.2.2
 [0.2.1]: https://github.com/blue-code/db-sync-manager/releases/tag/v0.2.1
 [0.2.0]: https://github.com/blue-code/db-sync-manager/releases/tag/v0.2.0

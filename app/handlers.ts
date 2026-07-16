@@ -71,13 +71,27 @@ export interface HandlerDeps {
   userDataDir: string;
 }
 
-/** 실패 메시지를 사용자에게 읽기 쉬운 한글로 다듬는다. */
+/**
+ * 실패 메시지를 사용자에게 읽기 쉬운 한글로 다듬는다.
+ * 원인을 숨기지 않도록, 힌트가 있으면 힌트 + 원문(raw)을 함께 보여준다.
+ */
 export function toMessage(err: unknown): string {
   const raw = err instanceof Error ? err.message : String(err);
-  if (/ECONNREFUSED/.test(raw)) return "접속 거부: 호스트/포트를 확인하세요.";
-  if (/ENOTFOUND|EAI_AGAIN/.test(raw)) return "호스트를 찾을 수 없습니다.";
-  if (/Access denied/i.test(raw)) return "인증 실패: 계정/비밀번호를 확인하세요.";
-  if (/Unknown database/i.test(raw)) return "존재하지 않는 데이터베이스입니다.";
+  const withRaw = (hint: string) => `${hint}\n원인: ${raw}`;
+
+  // SSL 관련: 서버가 SSL 을 요구하거나, 인증서 검증 실패.
+  if (/secure transport|insecure transport|SSL connection is required|ER_SECURE_TRANSPORT_REQUIRED/i.test(raw)) {
+    return withRaw("서버가 SSL 접속을 요구합니다. 'SSL 사용'을 켜고 다시 시도하세요.");
+  }
+  if (/self.?signed|unable to (get|verify)|CERT_|certificate|SSL routines|wrong version number/i.test(raw)) {
+    return withRaw("SSL 인증서를 검증할 수 없습니다. 'SSL 사용(인증서 미검증)'을 켜세요.");
+  }
+  if (/ECONNREFUSED/.test(raw)) return withRaw("접속 거부: 호스트/포트를 확인하세요.");
+  if (/ENOTFOUND|EAI_AGAIN/.test(raw)) return withRaw("호스트를 찾을 수 없습니다(DNS).");
+  if (/ETIMEDOUT|timeout/i.test(raw)) return withRaw("접속 시간 초과: 호스트/포트/방화벽을 확인하세요.");
+  if (/Access denied/i.test(raw)) return withRaw("인증 실패: 계정/비밀번호를 확인하세요.");
+  if (/Unknown database/i.test(raw)) return withRaw("존재하지 않는 데이터베이스입니다.");
+  // 매칭 안 되면 원문을 그대로 노출한다(무엇이 문제인지 반드시 보이도록).
   return raw;
 }
 
@@ -216,8 +230,10 @@ export function createHandlers(deps: HandlerDeps) {
   return {
     async testConnection(config: ConnForm): Promise<TestConnectionResult> {
       try {
-        const ok = await connector.ping(config);
-        return { ok, message: ok ? "접속 성공" : "접속 실패" };
+        // fetchGrants 는 실패 시 실제 오류를 던지므로 원인을 정확히 보여줄 수 있다.
+        // (ping 은 boolean 만 돌려줘 원인이 사라진다)
+        await connector.fetchGrants(config);
+        return { ok: true, message: "접속 성공" };
       } catch (err) {
         return { ok: false, message: toMessage(err) };
       }
@@ -463,6 +479,7 @@ export function createHandlers(deps: HandlerDeps) {
         user: config.user,
         database: config.database,
       };
+      if (config.ssl) entry.ssl = true;
       const state = await readConnections(userDataDir);
       state[role] = entry;
       state.recents = addRecent(state.recents, entry);

@@ -1,6 +1,6 @@
 {
   "name": "db-sync-manager",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "MySQL/MariaDB 데이터베이스 비교 및 동기화 도구",
   "type": "module",
   "license": "MIT",

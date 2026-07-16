@@ -13,6 +13,11 @@ export interface ConnectionConfig {
   user: string;
   password: string;
   database: string;
+  /**
+   * SSL 접속 사용 여부. true 면 SSL 로 접속하되 서버 인증서를 검증하지 않는다
+   * (mariadb 클라이언트의 `--ssl --ssl-verify-server-cert=0` 과 동일).
+   */
+  ssl?: boolean;
 }
 
 /** 지원 DB 종류. 방언(dialect) 분기의 기준점이 된다. */
