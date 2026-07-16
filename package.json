@@ -1,0 +1,31 @@
+{
+  "name": "db-sync-manager",
+  "version": "0.1.0",
+  "description": "MySQL/MariaDB 데이터베이스 비교 및 동기화 도구",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage"
+  },
+  "keywords": [
+    "mysql",
+    "mariadb",
+    "database",
+    "sync",
+    "diff",
+    "migration",
+    "dump"
+  ],
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}
