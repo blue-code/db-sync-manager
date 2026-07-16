@@ -73,7 +73,10 @@ export interface ViewDef {
 export interface RoutineDef {
   name: string;
   type: "PROCEDURE" | "FUNCTION";
+  /** 본문(비교용). INFORMATION_SCHEMA.ROUTINE_DEFINITION 기준. */
   definition: string;
+  /** 파라미터/반환까지 포함한 전체 CREATE 문(덤프용, SHOW CREATE 로 수집). */
+  createStatement?: string;
 }
 
 /** 트리거 정의. */

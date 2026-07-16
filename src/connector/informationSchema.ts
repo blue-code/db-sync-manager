@@ -58,6 +58,8 @@ export interface RawRoutineRow {
   ROUTINE_NAME: string;
   ROUTINE_TYPE: "PROCEDURE" | "FUNCTION";
   ROUTINE_DEFINITION: string | null;
+  /** SHOW CREATE 로 채우는 전체 DDL(덤프용). */
+  CREATE_STATEMENT?: string;
 }
 
 export interface RawTriggerRow {

@@ -11,6 +11,12 @@
   - `mode`: `schema` / `data` / `all`(기본)
   - `tables`: 특정 테이블만 / `dropTable`: DROP 선행(기본) / FK 검사 토글(기본)
   - 헤더 시각은 순수성 위해 외부 주입
+- DB 객체: `src/dump/objectDdl.ts` — 뷰/루틴/트리거 DDL
+  - 뷰: 정의(SELECT)를 `CREATE VIEW` 로 재구성(단일 문)
+  - 트리거: timing/event/table/statement 로 재구성(복합 본문 가능)
+  - 루틴: 파라미터/반환이 필요해 `SHOW CREATE` 로 얻은 전체 문 사용, **DEFINER 절 제거**(이식성)
+  - 복합 본문(루틴/트리거)은 `DELIMITER $$ … $$ DELIMITER ;` 로 감싼다
+  - 객체는 **전체 스키마 덤프(테이블 미지정)** 에서만 포함, 순서: 테이블 → 뷰 → 루틴 → 트리거
 - 파일명: `src/dump/filename.ts` — `autoDumpFilename(prefix, date, compression)` → `company_20260716.sql[.gz]`
 
 ## 압축 / 파일 I/O
@@ -25,7 +31,7 @@
 
 `src/dump/restore.ts` — `planRestore(sql, options)`(순수) / `restore(connector, config, sql, options)`
 
-- SQL 분리: `src/dump/sqlSplit.ts` — 인용부(', ", `)·이스케이프·연속 따옴표·라인 주석 처리
+- SQL 분리: `src/dump/sqlSplit.ts` — 인용부(', ", `)·이스케이프·연속 따옴표·라인 주석 + **DELIMITER 지시문** 처리(복합 본문을 한 문장으로 유지)
 - 옵션: `schemaOnly`(CREATE/DROP/ALTER) / `dataOnly`(INSERT/REPLACE), SET 제어문은 항상 유지
 - 실행은 커넥터 트랜잭션에 위임(실패 시 롤백)
 

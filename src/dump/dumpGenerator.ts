@@ -7,7 +7,13 @@
 
 import type { DataRow, SchemaSnapshot, TableDef } from "../domain/types.js";
 import { buildInsert } from "../sync/sqlGenerator.js";
+import { quoteId } from "../sync/sqlDialect.js";
 import { buildCreateTable } from "./ddlGenerator.js";
+import {
+  buildCreateView,
+  buildCreateTrigger,
+  buildCreateRoutine,
+} from "./objectDdl.js";
 
 export type DumpMode = "schema" | "data" | "all";
 
@@ -33,6 +39,34 @@ function selectTables(snapshot: SchemaSnapshot, only?: string[]): TableDef[] {
   if (!only) return snapshot.tables;
   const allow = new Set(only);
   return snapshot.tables.filter((t) => allow.has(t.name));
+}
+
+/** 복합 본문(프로시저/트리거)을 한 문장으로 유지하기 위해 DELIMITER 로 감싼다. */
+function delimited(create: string): string {
+  return `DELIMITER $$\n${create.trim()} $$\nDELIMITER ;`;
+}
+
+/**
+ * DB 레벨 객체(뷰/루틴/트리거) DDL 블록을 만든다.
+ * 뷰는 단일 문, 루틴/트리거는 DELIMITER 로 감싼다. dropFirst 시 DROP 을 선행한다.
+ */
+function objectBlocks(snapshot: SchemaSnapshot, dropFirst: boolean): string[] {
+  const blocks: string[] = [];
+
+  for (const v of snapshot.views ?? []) {
+    blocks.push(`-- view ${v.name}\n` + buildCreateView(v, dropFirst));
+  }
+  for (const r of snapshot.routines ?? []) {
+    if (!r.createStatement) continue; // 전체 DDL 미수집 루틴은 건너뛴다.
+    const drop = dropFirst ? `DROP ${r.type} IF EXISTS ${quoteId(r.name)};\n` : "";
+    blocks.push(`-- routine ${r.name}\n` + drop + delimited(buildCreateRoutine(r)));
+  }
+  for (const t of snapshot.triggers ?? []) {
+    const drop = dropFirst ? `DROP TRIGGER IF EXISTS ${quoteId(t.name)};\n` : "";
+    blocks.push(`-- trigger ${t.name}\n` + drop + delimited(buildCreateTrigger(t)));
+  }
+
+  return blocks;
 }
 
 /** 헤더 주석(재현성 위해 시각은 인자로 받은 것만 쓴다). */
@@ -81,6 +115,11 @@ export function generateDump(
       if (rows.length) parts.push(buildInsert(table, rows));
     }
     blocks.push(parts.join("\n"));
+  }
+
+  // DB 레벨 객체(뷰/루틴/트리거)는 전체 스키마 덤프(테이블 미지정)에서만 포함한다.
+  if (includeSchema && !tables) {
+    for (const block of objectBlocks(snapshot, dropTable)) blocks.push(block);
   }
 
   if (disableForeignKeyChecks) blocks.push("SET FOREIGN_KEY_CHECKS=1;");

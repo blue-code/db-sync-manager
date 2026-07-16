@@ -87,6 +87,12 @@ export type { SafetyWarning, Severity } from "./sync/safety.js";
 // Dump / Restore / Backup
 export { buildCreateTable } from "./dump/ddlGenerator.js";
 export type { CreateTableOptions } from "./dump/ddlGenerator.js";
+export {
+  buildCreateView,
+  buildCreateTrigger,
+  buildCreateRoutine,
+  stripDefiner,
+} from "./dump/objectDdl.js";
 export { generateDump } from "./dump/dumpGenerator.js";
 export type { DumpMode, DumpOptions, DumpInput } from "./dump/dumpGenerator.js";
 export { autoDumpFilename, extensionFor } from "./dump/filename.js";

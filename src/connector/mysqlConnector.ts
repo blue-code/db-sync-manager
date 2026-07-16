@@ -82,13 +82,25 @@ export class MysqlConnector implements DbConnector {
       const db = config.database;
       const q = async <T>(sql: string) =>
         (await conn.query<RowDataPacket[]>(sql, [db]))[0] as unknown as T[];
+
+      const routines = await q<RawRoutineRow>(QUERY_ROUTINES);
+      // 루틴 전체 DDL(파라미터/반환 포함)은 SHOW CREATE 로만 얻는다.
+      for (const r of routines) {
+        const col = r.ROUTINE_TYPE === "PROCEDURE" ? "Create Procedure" : "Create Function";
+        const [rows] = await conn.query<RowDataPacket[]>(
+          `SHOW CREATE ${r.ROUTINE_TYPE} ${quoteId(db)}.${quoteId(r.ROUTINE_NAME)}`,
+        );
+        const row = rows[0];
+        if (row) r.CREATE_STATEMENT = String(row[col] ?? "");
+      }
+
       return buildSnapshot(db, {
         tables: await q<RawTableRow>(QUERY_TABLES),
         columns: await q<RawColumnRow>(QUERY_COLUMNS),
         indexes: await q<RawIndexRow>(QUERY_INDEXES),
         foreignKeys: await q<RawForeignKeyRow>(QUERY_FOREIGN_KEYS),
         views: await q<RawViewRow>(QUERY_VIEWS),
-        routines: await q<RawRoutineRow>(QUERY_ROUTINES),
+        routines,
         triggers: await q<RawTriggerRow>(QUERY_TRIGGERS),
         events: await q<RawEventRow>(QUERY_EVENTS),
       });

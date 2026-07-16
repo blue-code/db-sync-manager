@@ -39,6 +39,29 @@ describe("generateDump", () => {
     expect(dump).not.toContain("`orders`");
   });
 
+  it("뷰/루틴/트리거 객체를 스키마 덤프에 포함한다", () => {
+    const withObjects = snapshot("app", [usersTable({ engine: "InnoDB" })]);
+    withObjects.views = [{ name: "v_u", definition: "select id from users" }];
+    withObjects.routines = [
+      { name: "sp", type: "PROCEDURE", definition: "BEGIN END", createStatement: "CREATE PROCEDURE `sp`() BEGIN SELECT 1; END" },
+    ];
+    withObjects.triggers = [
+      { name: "trg", table: "users", timing: "BEFORE", event: "INSERT", statement: "SET NEW.name=NEW.name" },
+    ];
+    const dump = generateDump({ snapshot: withObjects }, { mode: "schema" });
+    expect(dump).toContain("CREATE VIEW `v_u`");
+    expect(dump).toContain("CREATE PROCEDURE `sp`");
+    expect(dump).toContain("CREATE TRIGGER `trg`");
+    expect(dump).toContain("DELIMITER $$"); // 복합 본문 보호
+  });
+
+  it("특정 테이블 덤프에서는 DB 객체를 포함하지 않는다", () => {
+    const withObjects = snapshot("app", [usersTable()]);
+    withObjects.views = [{ name: "v_u", definition: "select 1" }];
+    const dump = generateDump({ snapshot: withObjects }, { tables: ["users"] });
+    expect(dump).not.toContain("CREATE VIEW");
+  });
+
   it("생성된 덤프는 문장 단위로 다시 분리 가능하다(왕복 정합성)", () => {
     const dump = generateDump({ snapshot: snap, data }, { mode: "all" });
     const statements = splitStatements(dump);

@@ -124,11 +124,15 @@ export function buildSnapshot(database: string, raw: RawSchema): SchemaSnapshot 
     name: v.TABLE_NAME,
     definition: v.VIEW_DEFINITION ?? "",
   }));
-  const routines: RoutineDef[] = (raw.routines ?? []).map((r) => ({
-    name: r.ROUTINE_NAME,
-    type: r.ROUTINE_TYPE,
-    definition: r.ROUTINE_DEFINITION ?? "",
-  }));
+  const routines: RoutineDef[] = (raw.routines ?? []).map((r) => {
+    const def: RoutineDef = {
+      name: r.ROUTINE_NAME,
+      type: r.ROUTINE_TYPE,
+      definition: r.ROUTINE_DEFINITION ?? "",
+    };
+    if (r.CREATE_STATEMENT) def.createStatement = r.CREATE_STATEMENT;
+    return def;
+  });
   const triggers: TriggerDef[] = (raw.triggers ?? []).map((t) => ({
     name: t.TRIGGER_NAME,
     table: t.EVENT_OBJECT_TABLE,

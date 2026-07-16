@@ -30,4 +30,20 @@ describe("splitStatements", () => {
     const out = splitStatements("SELECT `we;ird`; SELECT 3;");
     expect(out).toEqual(["SELECT `we;ird`", "SELECT 3"]);
   });
+
+  it("DELIMITER 로 감싼 복합 본문을 한 문장으로 유지한다", () => {
+    const sql = [
+      "DROP PROCEDURE IF EXISTS `p`;",
+      "DELIMITER $$",
+      "CREATE PROCEDURE `p`() BEGIN SELECT 1; SELECT 2; END $$",
+      "DELIMITER ;",
+      "SELECT 9;",
+    ].join("\n");
+    const out = splitStatements(sql);
+    expect(out).toEqual([
+      "DROP PROCEDURE IF EXISTS `p`;".replace(/;$/, ""),
+      "CREATE PROCEDURE `p`() BEGIN SELECT 1; SELECT 2; END",
+      "SELECT 9",
+    ]);
+  });
 });
