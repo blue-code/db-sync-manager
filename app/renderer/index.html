@@ -80,6 +80,15 @@
           <label class="chk"><input type="checkbox" id="sync-backup" checked /> 실행 전 자동 백업</label>
         </div>
         <div class="row">
+          <button id="sync-review" class="secondary">차이 검토 (행 선택)</button>
+          <span id="sync-review-controls" hidden>
+            <button id="sync-check-all" class="secondary">전체 선택</button>
+            <button id="sync-check-none" class="secondary">전체 해제</button>
+            <span id="sync-selected-count" class="hint"></span>
+          </span>
+        </div>
+        <div id="sync-review-list" class="review-list" hidden></div>
+        <div class="row">
           <button id="sync-preview" class="primary">미리보기</button>
           <button id="sync-apply" class="danger" disabled>실행</button>
         </div>

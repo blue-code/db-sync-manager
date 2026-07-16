@@ -229,6 +229,41 @@ button.danger {
   margin-top: 4px;
 }
 
+/* 행 단위 검토 목록 */
+.review-list {
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #1c2027;
+  padding: 4px;
+}
+.rv-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.rv-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.rv-key {
+  font-family: "Cascadia Code", "D2Coding", monospace;
+  min-width: 90px;
+}
+.rv-change {
+  color: var(--muted);
+  font-family: "Cascadia Code", "D2Coding", monospace;
+}
+#sync-review-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* 위험 확인 박스 */
 .danger-box {
   margin-top: 12px;

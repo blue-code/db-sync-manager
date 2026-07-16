@@ -13,6 +13,8 @@ import {
   type AnalyzeResult,
   type ListTablesResult,
   type SyncParams,
+  type ReviewSyncResult,
+  type PlanSyncParams,
   type PlanSyncResult,
   type ApplySyncParams,
   type ApplyResult,
@@ -31,7 +33,9 @@ const api = {
   listTables: (config: ConnForm): Promise<ListTablesResult> =>
     ipcRenderer.invoke(CHANNELS.listTables, config),
 
-  planSync: (origin: ConnForm, target: ConnForm, params: SyncParams): Promise<PlanSyncResult> =>
+  reviewSync: (origin: ConnForm, target: ConnForm, params: SyncParams): Promise<ReviewSyncResult> =>
+    ipcRenderer.invoke(CHANNELS.reviewSync, origin, target, params),
+  planSync: (origin: ConnForm, target: ConnForm, params: PlanSyncParams): Promise<PlanSyncResult> =>
     ipcRenderer.invoke(CHANNELS.planSync, origin, target, params),
   applySync: (origin: ConnForm, target: ConnForm, params: ApplySyncParams): Promise<ApplyResult> =>
     ipcRenderer.invoke(CHANNELS.applySync, origin, target, params),

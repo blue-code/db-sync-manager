@@ -12,12 +12,15 @@ import type {
   DumpMode,
   Compression,
   SafetyWarning,
+  DataDiffSummary,
+  RowDiffStatus,
 } from "../src/index.js";
 
 export const CHANNELS = {
   testConnection: "dbsync:testConnection",
   analyze: "dbsync:analyze",
   listTables: "dbsync:listTables",
+  reviewSync: "dbsync:reviewSync",
   planSync: "dbsync:planSync",
   applySync: "dbsync:applySync",
   buildDump: "dbsync:buildDump",
@@ -61,6 +64,32 @@ export interface SyncParams {
   includeDeletes: boolean;
 }
 
+/** Difference Review 의 한 행(변경 대상만). */
+export interface ReviewRow {
+  /** 선택 매칭용 안정 키 문자열(apply 시 재사용). */
+  keyStr: string;
+  /** 사람이 읽는 키 표기(예: id=2). */
+  keyLabel: string;
+  status: RowDiffStatus;
+  /** modified 일 때 변경 셀. */
+  changes?: { column: string; origin: unknown; target: unknown }[];
+}
+
+export interface ReviewSyncResult {
+  ok: boolean;
+  message: string;
+  summary?: DataDiffSummary;
+  keyColumns?: string[];
+  rows?: ReviewRow[];
+  /** 표시 상한을 넘겨 잘렸는지. */
+  truncated?: boolean;
+}
+
+/** plan/apply 공통: 선택된 행 키(미지정 시 전체 적용). */
+export interface PlanSyncParams extends SyncParams {
+  selectedKeys?: string[];
+}
+
 export interface PlanSyncResult {
   ok: boolean;
   message: string;
@@ -72,7 +101,7 @@ export interface PlanSyncResult {
   statementCount?: number;
 }
 
-export interface ApplySyncParams extends SyncParams {
+export interface ApplySyncParams extends PlanSyncParams {
   /** 파괴적 작업 전에 Target 을 자동 백업할지. */
   backup: boolean;
 }

@@ -128,22 +128,116 @@ function syncParams() {
   };
 }
 
+function escapeHtml(v) {
+  return String(v).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+}
+
+// ----- 행 단위 Difference Review -----
+const reviewListEl = $("#sync-review-list");
+const reviewControls = $("#sync-review-controls");
+let reviewActive = false; // 검토를 실행해 선택 집합이 유효한 상태인가
+
+/** 검토 목록을 초기화한다(모드/테이블 변경 시). */
+function resetReview() {
+  reviewActive = false;
+  reviewListEl.hidden = true;
+  reviewListEl.innerHTML = "";
+  reviewControls.hidden = true;
+}
+["#sync-mode", "#sync-table", "#sync-deletes"].forEach((sel) =>
+  $(sel).addEventListener("change", resetReview),
+);
+
+function updateSelectedCount() {
+  const total = reviewListEl.querySelectorAll(".rv-chk").length;
+  const checked = reviewListEl.querySelectorAll(".rv-chk:checked").length;
+  $("#sync-selected-count").textContent = `${checked}/${total} 선택`;
+}
+
+const STATUS_LABEL = { added: "신규", removed: "삭제", modified: "변경" };
+
+$("#sync-review").addEventListener("click", async () => {
+  const p = syncParams();
+  if (!p.table) return setStatus("테이블을 선택하세요.", "err");
+  if (p.mode === "overwrite") {
+    resetReview();
+    return setStatus("덮어쓰기 모드는 행 단위 선택이 없습니다(전체 교체).", "busy");
+  }
+  disarm();
+  setStatus("차이 검토 중...", "busy");
+  const res = await window.dbsync.reviewSync(readConn("origin"), readConn("target"), p);
+  if (!res.ok) return setStatus("검토 실패: " + res.message, "err");
+
+  if (res.rows.length === 0) {
+    resetReview();
+    return setStatus("변경 대상이 없습니다.", "ok");
+  }
+
+  reviewListEl.innerHTML = res.rows
+    .map((r) => {
+      const change =
+        r.status === "modified" && r.changes
+          ? r.changes
+              .map((c) => `${escapeHtml(c.column)}: ${escapeHtml(c.origin)} → ${escapeHtml(c.target)}`)
+              .join(", ")
+          : "";
+      return (
+        `<label class="rv-row"><input type="checkbox" class="rv-chk" checked ` +
+        `data-key="${escapeHtml(r.keyStr)}" />` +
+        `<span class="tag ${r.status}">[${STATUS_LABEL[r.status]}]</span>` +
+        `<span class="rv-key">${escapeHtml(r.keyLabel)}</span>` +
+        (change ? `<span class="rv-change">${change}</span>` : "") +
+        `</label>`
+      );
+    })
+    .join("");
+
+  reviewListEl.hidden = false;
+  reviewControls.hidden = false;
+  reviewActive = true;
+  reviewListEl.querySelectorAll(".rv-chk").forEach((c) => c.addEventListener("change", updateSelectedCount));
+  updateSelectedCount();
+
+  const trunc = res.truncated ? " (표시 상한 초과, 일부만 표시)" : "";
+  setStatus(`${res.message}${trunc} — 적용할 행을 선택하세요.`, "ok");
+});
+
+$("#sync-check-all").addEventListener("click", () => {
+  reviewListEl.querySelectorAll(".rv-chk").forEach((c) => (c.checked = true));
+  updateSelectedCount();
+});
+$("#sync-check-none").addEventListener("click", () => {
+  reviewListEl.querySelectorAll(".rv-chk").forEach((c) => (c.checked = false));
+  updateSelectedCount();
+});
+
+/** 검토를 실행했다면 선택된 키 배열을, 아니면 undefined(전체)를 돌려준다. */
+function selectedKeys() {
+  if (!reviewActive) return undefined;
+  return Array.from(reviewListEl.querySelectorAll(".rv-chk:checked")).map((c) => c.dataset.key);
+}
+
 $("#sync-preview").addEventListener("click", async () => {
   const p = syncParams();
   if (!p.table) return setStatus("테이블을 선택하세요.", "err");
+  const keys = selectedKeys();
+  if (keys) p.selectedKeys = keys;
   disarm();
   setStatus("미리보기 생성 중...", "busy");
   const res = await window.dbsync.planSync(readConn("origin"), readConn("target"), p);
   if (!res.ok) return setStatus("실패: " + res.message, "err");
 
   const s = res.summary;
-  setStatus(`${res.message} — INSERT ${s.insert} / UPDATE ${s.update} / DELETE ${s.delete}`, "ok");
+  const scope = keys ? ` (선택 ${keys.length}행)` : "";
+  setStatus(`${res.message}${scope} — INSERT ${s.insert} / UPDATE ${s.update} / DELETE ${s.delete}`, "ok");
   showResult(res.preview || "(변경 없음)");
   if (res.statementCount > 0) armDanger($("#sync-apply"), res.warnings);
 });
 
 $("#sync-apply").addEventListener("click", async () => {
   const p = { ...syncParams(), backup: $("#sync-backup").checked };
+  const keys = selectedKeys();
+  if (keys) p.selectedKeys = keys;
   setStatus("동기화 실행 중...", "busy");
   const res = await window.dbsync.applySync(readConn("origin"), readConn("target"), p);
   disarm();

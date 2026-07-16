@@ -127,4 +127,41 @@ describe("데이터 동기화 라운드트립(실 DB)", () => {
     expect(byId.get(4)?.name).toBe("신규"); // 삽입됨
     expect(byId.has(3)).toBe(true); // includeDeletes=false 라 유지
   });
+
+  it("행 단위 선택(Difference Review): 고른 행만 반영한다", async (ctx) => {
+    if (!up) return ctx.skip();
+    // 독립 테이블로 셋업(다른 테스트 상태와 격리).
+    await runSetup(port, [
+      "CREATE DATABASE IF NOT EXISTS sel_src",
+      "CREATE DATABASE IF NOT EXISTS sel_dst",
+      `CREATE TABLE sel_src.items (id INT PRIMARY KEY, v VARCHAR(20)) ENGINE=InnoDB`,
+      `CREATE TABLE sel_dst.items (id INT PRIMARY KEY, v VARCHAR(20)) ENGINE=InnoDB`,
+      `INSERT INTO sel_src.items VALUES (1,'a'),(2,'b'),(3,'c')`,
+    ]);
+    const srcCfg = conf(port, "sel_src");
+    const dstCfg = conf(port, "sel_dst");
+    const dstTable = (await connector.fetchSchema(dstCfg)).tables.find((t) => t.name === "items")!;
+
+    const diff = compareData(
+      "items",
+      await connector.fetchRows(srcCfg, "items"),
+      await connector.fetchRows(dstCfg, "items"),
+      ["id"],
+    );
+    expect(diff.summary.added).toBe(3);
+
+    // main 핸들러와 동일한 키 문자열 규칙으로 id 1, 3 만 선택.
+    const keyStr = (key: Record<string, unknown>) => JSON.stringify(key["id"] ?? null);
+    const selected = new Set([keyStr({ id: 1 }), keyStr({ id: 3 })]);
+
+    const plan = buildSyncPlan(diff, {
+      mode: "insertOnly",
+      includeDeletes: false,
+      select: (row) => selected.has(keyStr(row.key)),
+    });
+    await connector.execute(dstCfg, generatePlanSql(plan, dstTable));
+
+    const ids = (await connector.fetchRows(dstCfg, "items")).map((r) => r.id).sort();
+    expect(ids).toEqual([1, 3]); // 선택한 행만 반영, id2 제외
+  });
 });

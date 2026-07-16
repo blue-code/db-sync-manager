@@ -39,7 +39,10 @@ import {
   type AnalyzeResult,
   type ListTablesResult,
   type SyncParams,
+  type PlanSyncParams,
   type PlanSyncResult,
+  type ReviewSyncResult,
+  type ReviewRow,
   type ApplySyncParams,
   type ApplyResult,
   type DumpParams,
@@ -117,10 +120,15 @@ interface SyncComputation {
   warnings: SafetyWarning[];
 }
 
+/** 키 객체를 선택 매칭용 안정 문자열로 만든다(renderer 와 규칙 일치). */
+function keyStr(key: Record<string, unknown>, keyColumns: string[]): string {
+  return keyColumns.map((c) => JSON.stringify(key[c] ?? null)).join("");
+}
+
 async function computeSync(
   origin: ConnForm,
   target: ConnForm,
-  params: SyncParams,
+  params: PlanSyncParams,
 ): Promise<SyncComputation> {
   const targetSchema = await connector.fetchSchema(target);
   const targetTable = targetSchema.tables.find((t) => t.name === params.table);
@@ -131,28 +139,80 @@ async function computeSync(
   let destructive = false;
 
   if (params.mode === "overwrite") {
-    // 코스 경로: 데이터만 덮어쓰기(TRUNCATE + INSERT).
+    // 코스 경로: 데이터만 덮어쓰기(TRUNCATE + INSERT). 행 선택은 적용되지 않는다.
     const originRows = await connector.fetchRows(origin, params.table);
     statements = generateSyncSql({ table: targetTable, rows: originRows, mode: "overwrite" });
     summary = { insert: originRows.length, update: 0, delete: 0 };
     destructive = true; // TRUNCATE 로 기존 행 제거
   } else {
-    // 파인 경로: diff 기반 계획.
+    // 파인 경로: diff 기반 계획. selectedKeys 가 있으면 그 행만 포함한다.
     if (targetTable.primaryKey.length === 0) {
       throw new Error(`'${params.table}' 에 PK 가 없어 데이터 비교 동기화가 불가합니다.`);
     }
+    const pk = targetTable.primaryKey;
     const [originRows, targetRows] = await Promise.all([
       connector.fetchRows(origin, params.table),
       connector.fetchRows(target, params.table),
     ]);
-    const diff = compareData(params.table, originRows, targetRows, targetTable.primaryKey);
-    const plan = buildSyncPlan(diff, { mode: params.mode, includeDeletes: params.includeDeletes });
+    const diff = compareData(params.table, originRows, targetRows, pk);
+
+    const selected = params.selectedKeys ? new Set(params.selectedKeys) : undefined;
+    const plan = buildSyncPlan(diff, {
+      mode: params.mode,
+      includeDeletes: params.includeDeletes,
+      ...(selected ? { select: (row) => selected.has(keyStr(row.key, pk)) } : {}),
+    });
     statements = generatePlanSql(plan, targetTable);
     summary = plan.summary;
     destructive = plan.destructive;
   }
 
   return { statements, targetTable, summary, destructive, warnings: analyzeStatements(statements) };
+}
+
+/** Difference Review: 변경 대상 행 목록을 만든다(파인 모드 전용). */
+async function computeReview(
+  origin: ConnForm,
+  target: ConnForm,
+  params: SyncParams,
+  max = 1000,
+): Promise<ReviewSyncResult> {
+  const targetSchema = await connector.fetchSchema(target);
+  const targetTable = targetSchema.tables.find((t) => t.name === params.table);
+  if (!targetTable) throw new Error(`Target 에 '${params.table}' 테이블이 없습니다.`);
+  if (targetTable.primaryKey.length === 0) {
+    throw new Error(`'${params.table}' 에 PK 가 없어 행 단위 검토가 불가합니다.`);
+  }
+  const pk = targetTable.primaryKey;
+
+  const [originRows, targetRows] = await Promise.all([
+    connector.fetchRows(origin, params.table),
+    connector.fetchRows(target, params.table),
+  ]);
+  const diff = compareData(params.table, originRows, targetRows, pk);
+
+  // 변경 대상만(동일 제외). includeDeletes 가 아니면 removed 는 검토 목록에서 제외.
+  const changed = diff.rows.filter((r) => {
+    if (r.status === "identical") return false;
+    if (r.status === "removed" && !params.includeDeletes) return false;
+    return true;
+  });
+
+  const rows: ReviewRow[] = changed.slice(0, max).map((r) => {
+    const label = pk.map((c) => `${c}=${String(r.key[c])}`).join(", ");
+    const row: ReviewRow = { keyStr: keyStr(r.key, pk), keyLabel: label, status: r.status };
+    if (r.status === "modified") row.changes = r.changes;
+    return row;
+  });
+
+  return {
+    ok: true,
+    message: `검토 대상 ${changed.length}건`,
+    summary: diff.summary,
+    keyColumns: pk,
+    rows,
+    truncated: changed.length > max,
+  };
 }
 
 /** 특정 테이블만 덤프해 백업 파일로 저장한다(파괴적 동기화 전). */
@@ -213,11 +273,22 @@ function registerIpc(): void {
     },
   );
 
-  // ----- Sync: plan → apply -----
+  // ----- Sync: review → plan → apply -----
+
+  ipcMain.handle(
+    CHANNELS.reviewSync,
+    async (_e, origin: ConnForm, target: ConnForm, params: SyncParams): Promise<ReviewSyncResult> => {
+      try {
+        return await computeReview(origin, target, params);
+      } catch (err) {
+        return { ok: false, message: toMessage(err) };
+      }
+    },
+  );
 
   ipcMain.handle(
     CHANNELS.planSync,
-    async (_e, origin: ConnForm, target: ConnForm, params: SyncParams): Promise<PlanSyncResult> => {
+    async (_e, origin: ConnForm, target: ConnForm, params: PlanSyncParams): Promise<PlanSyncResult> => {
       try {
         const c = await computeSync(origin, target, params);
         return {
