@@ -28,11 +28,25 @@ app/
 
 ## 메인 화면
 
-- Origin / Target 접속 폼(Host/Port/ID/PW/Database)
-- 연결 테스트(Origin/Target) — `MysqlConnector.ping`, 실패는 한글 메시지로 변환
-- ① 비교(Analyze) — 양쪽 스키마를 읽어 `compareSchema` → 상태 표기([=]/[+]/[-]/[*]) 렌더링
-- ⑤ History — `HistoryStore`(userData) 목록
-- ② Sync / ③ Dump / ④ Restore — 버튼 배치(파괴적 작업이라 GUI 결선은 후속)
+- Origin / Target 접속 폼(Host/Port/ID/PW/Database) + 연결 테스트(한글 오류 변환)
+- 상단 탭(①~⑤)으로 작업 패널 전환
+
+### 파괴적 작업은 plan → apply 2단계 (강제)
+
+Sync/Restore 는 반드시 **미리보기(plan)** 후에만 **실행(apply)** 할 수 있다.
+plan 이 파괴적 문(TRUNCATE/DELETE/DROP)을 감지하면 위험 박스에 경고를 띄우고,
+"위험을 이해했습니다" 체크 전까지 실행 버튼을 잠근다(모달 대화상자 대신 인페이지 확인).
+
+| 패널 | plan(미리보기) | apply(실행) |
+| --- | --- | --- |
+| ① 비교 | `analyze` → 스키마 diff | — |
+| ② 동기화 | `planSync` → 건수/Preview/경고 | `applySync`(위험 시 Target 테이블 자동 백업 → 트랜잭션 실행 → History) |
+| ③ Dump | `buildDump` → 텍스트 미리보기/용량 | `saveDump`(저장 대화상자 → 파일 기록) |
+| ④ Restore | `planRestore`(파일 선택 → 문장/경고) | `applyRestore`(스키마/데이터만 선택 → 트랜잭션 복원 → History) |
+| ⑤ History | `listHistory` | — |
+
+- 동기화 모드: upsert / insertOnly / updateOnly / overwrite, Target 전용 행 삭제 옵션
+- apply 는 plan 과 동일 로직을 재계산해 실행한다(실행 시점의 최신 상태 반영).
 
 ## 검증 상태
 
@@ -42,6 +56,6 @@ app/
 
 ## 후속
 
-- Sync/Dump/Restore 화면 결선(안전장치·Preview·자동 백업 흐름 반영)
-- Difference Review(적용/제외 체크) UI, Task 저장/재실행, Scheduler 설정 화면
+- Difference Review 행 단위 적용/제외 체크 UI(현재는 테이블 단위)
+- Task 저장/재실행, Scheduler 설정 화면
 - 스키마 확장 비교(Index/FK/Trigger/View/Procedure) 결과 표시

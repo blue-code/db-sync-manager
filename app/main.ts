@@ -2,18 +2,52 @@
  * Electron 메인 프로세스.
  *
  * 창을 만들고, 렌더러의 IPC 요청을 코어 엔진에 연결한다.
- * 실제 DB 접속/비교는 순수 라이브러리(../src)를 그대로 사용한다.
+ * 파괴적 작업(Sync/Restore)은 plan(미리보기) → apply(실행) 2단계로만 노출한다.
  */
 
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, dialog } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { mkdir } from "node:fs/promises";
 import {
   MysqlConnector,
   compareSchema,
+  compareData,
+  buildSyncPlan,
+  generatePlanSql,
+  generateSyncSql,
+  analyzeStatements,
+  previewSql,
+  generateDump,
+  autoDumpFilename,
+  writeDumpFile,
+  readDumpFile,
+  planRestore,
+  buildHistoryEntry,
   HistoryStore,
+  stripPassword,
+  type DataRow,
+  type TableDef,
+  type SafetyWarning,
+  type RunCounts,
+  type TaskKind,
 } from "../src/index.js";
-import { CHANNELS, type ConnForm, type TestConnectionResult, type AnalyzeResult } from "./ipc.js";
+import {
+  CHANNELS,
+  type ConnForm,
+  type TestConnectionResult,
+  type AnalyzeResult,
+  type ListTablesResult,
+  type SyncParams,
+  type PlanSyncResult,
+  type ApplySyncParams,
+  type ApplyResult,
+  type DumpParams,
+  type BuildDumpResult,
+  type SaveDumpResult,
+  type PlanRestoreResult,
+  type ApplyRestoreParams,
+} from "./ipc.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const connector = new MysqlConnector();
@@ -21,7 +55,7 @@ const connector = new MysqlConnector();
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1080,
-    height: 760,
+    height: 800,
     title: "DB Sync Manager",
     webPreferences: {
       preload: join(__dirname, "preload.js"),
@@ -44,9 +78,95 @@ function toMessage(err: unknown): string {
   return raw;
 }
 
-/** History 파일 경로(사용자 데이터 폴더). */
 function historyStore(): HistoryStore {
   return new HistoryStore(join(app.getPath("userData"), "history.jsonl"));
+}
+
+/** 미리보기가 너무 길면 잘라낸다(렌더러 부하 방지). */
+function clipPreview(text: string, max = 8000): string {
+  return text.length > max ? text.slice(0, max) + "\n... (이하 생략)" : text;
+}
+
+/** 실행 기록을 남긴다(성공/실패 공통). */
+async function record(
+  kind: TaskKind,
+  status: "success" | "failure",
+  origin: ConnForm | undefined,
+  target: ConnForm | undefined,
+  extra: { counts?: RunCounts; error?: string },
+): Promise<void> {
+  const input: Parameters<typeof buildHistoryEntry>[0] = {
+    id: String(Date.now()),
+    kind,
+    status,
+  };
+  if (origin) input.origin = stripPassword(origin);
+  if (target) input.target = stripPassword(target);
+  if (extra.counts) input.counts = extra.counts;
+  if (extra.error) input.error = extra.error;
+  await historyStore().append(buildHistoryEntry(input, new Date()));
+}
+
+// ---- Sync 계획 계산(plan/apply 공유) ----
+
+interface SyncComputation {
+  statements: string[];
+  targetTable: TableDef;
+  summary: { insert: number; update: number; delete: number };
+  destructive: boolean;
+  warnings: SafetyWarning[];
+}
+
+async function computeSync(
+  origin: ConnForm,
+  target: ConnForm,
+  params: SyncParams,
+): Promise<SyncComputation> {
+  const targetSchema = await connector.fetchSchema(target);
+  const targetTable = targetSchema.tables.find((t) => t.name === params.table);
+  if (!targetTable) throw new Error(`Target 에 '${params.table}' 테이블이 없습니다.`);
+
+  let statements: string[];
+  let summary = { insert: 0, update: 0, delete: 0 };
+  let destructive = false;
+
+  if (params.mode === "overwrite") {
+    // 코스 경로: 데이터만 덮어쓰기(TRUNCATE + INSERT).
+    const originRows = await connector.fetchRows(origin, params.table);
+    statements = generateSyncSql({ table: targetTable, rows: originRows, mode: "overwrite" });
+    summary = { insert: originRows.length, update: 0, delete: 0 };
+    destructive = true; // TRUNCATE 로 기존 행 제거
+  } else {
+    // 파인 경로: diff 기반 계획.
+    if (targetTable.primaryKey.length === 0) {
+      throw new Error(`'${params.table}' 에 PK 가 없어 데이터 비교 동기화가 불가합니다.`);
+    }
+    const [originRows, targetRows] = await Promise.all([
+      connector.fetchRows(origin, params.table),
+      connector.fetchRows(target, params.table),
+    ]);
+    const diff = compareData(params.table, originRows, targetRows, targetTable.primaryKey);
+    const plan = buildSyncPlan(diff, { mode: params.mode, includeDeletes: params.includeDeletes });
+    statements = generatePlanSql(plan, targetTable);
+    summary = plan.summary;
+    destructive = plan.destructive;
+  }
+
+  return { statements, targetTable, summary, destructive, warnings: analyzeStatements(statements) };
+}
+
+/** 특정 테이블만 덤프해 백업 파일로 저장한다(파괴적 동기화 전). */
+async function backupTargetTable(target: ConnForm, table: string): Promise<string> {
+  const schema = await connector.fetchSchema(target);
+  const data = new Map<string, DataRow[]>();
+  data.set(table, await connector.fetchRows(target, table));
+  const text = generateDump({ snapshot: schema, data }, { tables: [table] }, new Date().toISOString());
+
+  const dir = join(app.getPath("userData"), "backups");
+  await mkdir(dir, { recursive: true });
+  const filePath = join(dir, autoDumpFilename(`${target.database}_${table}`, new Date(), "gzip"));
+  await writeDumpFile(filePath, text, "gzip");
+  return filePath;
 }
 
 function registerIpc(): void {
@@ -70,17 +190,180 @@ function registerIpc(): void {
           connector.fetchSchema(origin),
           connector.fetchSchema(target),
         ]);
-        const diff = compareSchema(os, ts);
-        return { ok: true, message: "비교 완료", diff };
+        return { ok: true, message: "비교 완료", diff: compareSchema(os, ts) };
       } catch (err) {
         return { ok: false, message: toMessage(err) };
       }
     },
   );
 
-  ipcMain.handle(CHANNELS.listHistory, async () => {
-    return historyStore().list();
+  ipcMain.handle(
+    CHANNELS.listTables,
+    async (_e, config: ConnForm): Promise<ListTablesResult> => {
+      try {
+        const schema = await connector.fetchSchema(config);
+        return {
+          ok: true,
+          message: `${schema.tables.length}개 테이블`,
+          tables: schema.tables.map((t) => ({ name: t.name, primaryKey: t.primaryKey })),
+        };
+      } catch (err) {
+        return { ok: false, message: toMessage(err) };
+      }
+    },
+  );
+
+  // ----- Sync: plan → apply -----
+
+  ipcMain.handle(
+    CHANNELS.planSync,
+    async (_e, origin: ConnForm, target: ConnForm, params: SyncParams): Promise<PlanSyncResult> => {
+      try {
+        const c = await computeSync(origin, target, params);
+        return {
+          ok: true,
+          message: c.statements.length ? "미리보기 생성됨" : "변경 사항이 없습니다.",
+          summary: c.summary,
+          preview: clipPreview(previewSql(c.statements)),
+          warnings: c.warnings,
+          destructive: c.destructive,
+          statementCount: c.statements.length,
+        };
+      } catch (err) {
+        return { ok: false, message: toMessage(err) };
+      }
+    },
+  );
+
+  ipcMain.handle(
+    CHANNELS.applySync,
+    async (_e, origin: ConnForm, target: ConnForm, params: ApplySyncParams): Promise<ApplyResult> => {
+      const kind: TaskKind = params.mode === "overwrite" ? "syncCoarse" : "syncFine";
+      try {
+        const c = await computeSync(origin, target, params);
+        if (c.statements.length === 0) return { ok: true, message: "변경 사항이 없습니다.", executed: 0 };
+
+        let backupPath: string | undefined;
+        if (c.destructive && params.backup) {
+          backupPath = await backupTargetTable(target, params.table);
+        }
+
+        const executed = await connector.execute(target, c.statements);
+        await record(kind, "success", origin, target, { counts: { ...c.summary, statements: executed } });
+
+        const result: ApplyResult = { ok: true, message: `실행 완료 (${executed}문)`, executed };
+        if (backupPath) result.backupPath = backupPath;
+        return result;
+      } catch (err) {
+        const message = toMessage(err);
+        await record(kind, "failure", origin, target, { error: message });
+        return { ok: false, message };
+      }
+    },
+  );
+
+  // ----- Dump: build(preview) → save -----
+
+  async function buildDumpText(origin: ConnForm, params: DumpParams): Promise<string> {
+    const schema = await connector.fetchSchema(origin);
+    const data = new Map<string, DataRow[]>();
+    if (params.mode === "data" || params.mode === "all") {
+      const targets = params.tables?.length
+        ? schema.tables.filter((t) => params.tables!.includes(t.name))
+        : schema.tables;
+      for (const t of targets) data.set(t.name, await connector.fetchRows(origin, t.name));
+    }
+    const opts = params.tables?.length ? { mode: params.mode, tables: params.tables } : { mode: params.mode };
+    return generateDump({ snapshot: schema, data }, opts, new Date().toISOString());
+  }
+
+  ipcMain.handle(
+    CHANNELS.buildDump,
+    async (_e, origin: ConnForm, params: DumpParams): Promise<BuildDumpResult> => {
+      try {
+        const text = await buildDumpText(origin, params);
+        return {
+          ok: true,
+          message: "덤프 미리보기 생성됨",
+          preview: clipPreview(text),
+          byteLength: Buffer.byteLength(text, "utf8"),
+        };
+      } catch (err) {
+        return { ok: false, message: toMessage(err) };
+      }
+    },
+  );
+
+  ipcMain.handle(
+    CHANNELS.saveDump,
+    async (_e, origin: ConnForm, params: DumpParams): Promise<SaveDumpResult> => {
+      try {
+        const text = await buildDumpText(origin, params);
+        const defaultName = autoDumpFilename(origin.database, new Date(), params.compression);
+        const picked = await dialog.showSaveDialog({
+          title: "덤프 저장",
+          defaultPath: defaultName,
+          filters: [{ name: "SQL Dump", extensions: params.compression === "gzip" ? ["gz"] : ["sql"] }],
+        });
+        if (picked.canceled || !picked.filePath) return { ok: false, message: "저장이 취소되었습니다." };
+
+        await writeDumpFile(picked.filePath, text, params.compression);
+        await record("dump", "success", origin, undefined, {});
+        return { ok: true, message: "덤프를 저장했습니다.", filePath: picked.filePath };
+      } catch (err) {
+        return { ok: false, message: toMessage(err) };
+      }
+    },
+  );
+
+  // ----- Restore: pick+plan → apply -----
+
+  ipcMain.handle(CHANNELS.planRestore, async (): Promise<PlanRestoreResult> => {
+    try {
+      const picked = await dialog.showOpenDialog({
+        title: "복원할 덤프 선택",
+        properties: ["openFile"],
+        filters: [{ name: "SQL Dump", extensions: ["sql", "gz"] }],
+      });
+      const filePath = picked.filePaths[0];
+      if (picked.canceled || !filePath) return { ok: false, message: "선택이 취소되었습니다." };
+
+      const sql = await readDumpFile(filePath);
+      const statements = planRestore(sql);
+      return {
+        ok: true,
+        message: `${statements.length}개 문장`,
+        filePath,
+        preview: clipPreview(previewSql(statements)),
+        warnings: analyzeStatements(statements),
+        statementCount: statements.length,
+      };
+    } catch (err) {
+      return { ok: false, message: toMessage(err) };
+    }
   });
+
+  ipcMain.handle(
+    CHANNELS.applyRestore,
+    async (_e, target: ConnForm, params: ApplyRestoreParams): Promise<ApplyResult> => {
+      try {
+        const sql = await readDumpFile(params.filePath);
+        const statements = planRestore(sql, {
+          schemaOnly: params.schemaOnly,
+          dataOnly: params.dataOnly,
+        });
+        const executed = await connector.execute(target, statements);
+        await record("restore", "success", undefined, target, { counts: { statements: executed } });
+        return { ok: true, message: `복원 완료 (${executed}문)`, executed };
+      } catch (err) {
+        const message = toMessage(err);
+        await record("restore", "failure", undefined, target, { error: message });
+        return { ok: false, message };
+      }
+    },
+  );
+
+  ipcMain.handle(CHANNELS.listHistory, async () => historyStore().list());
 }
 
 void app.whenReady().then(() => {

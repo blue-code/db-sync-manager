@@ -169,3 +169,83 @@ button.disabled {
 .tag.removed { color: var(--danger); }
 .tag.modified { color: var(--warn); }
 .tag.identical { color: var(--muted); }
+
+button.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  font-weight: 600;
+}
+
+/* 작업 패널 */
+.workspace {
+  padding: 4px 20px 0;
+}
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.row {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.row .grow { flex: 1; }
+.row label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.row label.chk {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+.row select,
+.row input[type="text"],
+.row input:not([type]) {
+  background: #1c2027;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 9px;
+  color: var(--text);
+  font-size: 13px;
+  min-width: 160px;
+}
+.hint {
+  color: var(--muted);
+  font-size: 12px;
+  align-self: center;
+}
+.conn-card .test {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+}
+
+/* 위험 확인 박스 */
+.danger-box {
+  margin-top: 12px;
+  border: 1px solid var(--danger);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: rgba(239, 68, 68, 0.08);
+}
+.danger-box #danger-msg {
+  color: var(--danger);
+  white-space: pre-wrap;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.danger-box label.chk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}

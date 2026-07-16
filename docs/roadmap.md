@@ -43,8 +43,8 @@
 
 - [x] GUI (Electron) — 메인 화면(Origin/Target/연결 테스트/비교/History)
   - [x] 코어 엔진 IPC 결선(testConnection/analyze/listHistory), contextIsolation + CSP
-  - [ ] Sync/Dump/Restore 화면 결선(안전장치·Preview·자동 백업 반영)
-  - [ ] Difference Review UI, Task 저장·재실행, Scheduler 설정 화면
+  - [x] Sync/Dump/Restore 화면 결선(plan→apply 2단계, 안전장치·Preview·자동 백업 반영)
+  - [ ] Difference Review 행 단위 적용/제외 UI, Task 저장·재실행, Scheduler 설정 화면
 - [ ] 스키마 확장 비교: Index / FK / Trigger / View / Procedure / Function / Event
 - [ ] 실 DB 통합 테스트(Docker MySQL) — 커넥터 I/O 배선 검증
 - [ ] zip 압축(외부 의존성 없는 안전 구현)

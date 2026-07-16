@@ -3,7 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- 렌더러는 로컬 자산만 사용한다(외부 리소스 없음). -->
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'"
@@ -19,7 +18,6 @@
 
     <main class="layout">
       <section class="panels">
-        <!-- Origin -->
         <form class="conn-card" data-role="origin">
           <h2>Origin</h2>
           <label>Host <input name="host" value="127.0.0.1" /></label>
@@ -27,11 +25,11 @@
           <label>ID <input name="user" value="root" /></label>
           <label>PW <input name="password" type="password" /></label>
           <label>Database <input name="database" /></label>
+          <button type="button" class="secondary test" data-target="origin">연결 테스트</button>
         </form>
 
         <div class="arrow">↓</div>
 
-        <!-- Target -->
         <form class="conn-card" data-role="target">
           <h2>Target</h2>
           <label>Host <input name="host" value="127.0.0.1" /></label>
@@ -39,20 +37,111 @@
           <label>ID <input name="user" value="root" /></label>
           <label>PW <input name="password" type="password" /></label>
           <label>Database <input name="database" /></label>
+          <button type="button" class="secondary test" data-target="target">연결 테스트</button>
         </form>
       </section>
 
-      <section class="actions">
-        <button id="btn-test-origin" class="secondary">Origin 연결 테스트</button>
-        <button id="btn-test-target" class="secondary">Target 연결 테스트</button>
-        <hr />
-        <button id="btn-analyze" class="primary">① 비교 (Analyze)</button>
-        <button class="disabled" disabled title="준비 중">② 동기화 (Sync)</button>
-        <button class="disabled" disabled title="준비 중">③ Dump</button>
-        <button class="disabled" disabled title="준비 중">④ Restore</button>
-        <button id="btn-history" class="secondary">⑤ History</button>
-      </section>
+      <nav class="actions">
+        <button class="tab primary" data-panel="analyze">① 비교</button>
+        <button class="tab" data-panel="sync">② 동기화</button>
+        <button class="tab" data-panel="dump">③ Dump</button>
+        <button class="tab" data-panel="restore">④ Restore</button>
+        <button class="tab" data-panel="history">⑤ History</button>
+      </nav>
     </main>
+
+    <section class="workspace">
+      <!-- ① 비교 -->
+      <div class="panel" data-panel="analyze">
+        <div class="row">
+          <button id="run-analyze" class="primary">스키마 비교 실행</button>
+          <span class="hint">Origin ↔ Target 구조 차이</span>
+        </div>
+      </div>
+
+      <!-- ② 동기화 -->
+      <div class="panel" data-panel="sync" hidden>
+        <div class="row">
+          <label>테이블
+            <select id="sync-table"><option value="">(Target 연결 테스트 후 로드)</option></select>
+          </label>
+          <button id="sync-load-tables" class="secondary">테이블 로드</button>
+        </div>
+        <div class="row">
+          <label>모드
+            <select id="sync-mode">
+              <option value="upsert">INSERT+UPDATE (upsert)</option>
+              <option value="insertOnly">신규만 추가 (insertOnly)</option>
+              <option value="updateOnly">변경만 갱신 (updateOnly)</option>
+              <option value="overwrite">데이터 덮어쓰기 (TRUNCATE+INSERT)</option>
+            </select>
+          </label>
+          <label class="chk"><input type="checkbox" id="sync-deletes" /> Target 전용 행 삭제</label>
+          <label class="chk"><input type="checkbox" id="sync-backup" checked /> 실행 전 자동 백업</label>
+        </div>
+        <div class="row">
+          <button id="sync-preview" class="primary">미리보기</button>
+          <button id="sync-apply" class="danger" disabled>실행</button>
+        </div>
+      </div>
+
+      <!-- ③ Dump -->
+      <div class="panel" data-panel="dump" hidden>
+        <div class="row">
+          <label>범위
+            <select id="dump-mode">
+              <option value="all">스키마+데이터</option>
+              <option value="schema">스키마만</option>
+              <option value="data">데이터만</option>
+            </select>
+          </label>
+          <label>압축
+            <select id="dump-compression">
+              <option value="none">없음 (.sql)</option>
+              <option value="gzip">gzip (.sql.gz)</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <label class="grow">테이블(쉼표 구분, 비우면 전체)
+            <input id="dump-tables" placeholder="users, orders" />
+          </label>
+        </div>
+        <div class="row">
+          <button id="dump-preview" class="primary">미리보기</button>
+          <button id="dump-save" class="secondary">파일로 저장</button>
+        </div>
+      </div>
+
+      <!-- ④ Restore -->
+      <div class="panel" data-panel="restore" hidden>
+        <div class="row">
+          <button id="restore-pick" class="primary">덤프 파일 선택 · 미리보기</button>
+          <span id="restore-file" class="hint">선택된 파일 없음</span>
+        </div>
+        <div class="row">
+          <label class="chk"><input type="radio" name="restore-scope" value="all" checked /> 전체</label>
+          <label class="chk"><input type="radio" name="restore-scope" value="schema" /> 스키마만</label>
+          <label class="chk"><input type="radio" name="restore-scope" value="data" /> 데이터만</label>
+        </div>
+        <div class="row">
+          <button id="restore-apply" class="danger" disabled>Target 에 복원 실행</button>
+        </div>
+      </div>
+
+      <!-- ⑤ History -->
+      <div class="panel" data-panel="history" hidden>
+        <div class="row">
+          <button id="history-load" class="primary">기록 새로고침</button>
+        </div>
+      </div>
+
+      <!-- 위험 확인 -->
+      <div id="danger-box" class="danger-box" hidden>
+        <div id="danger-msg"></div>
+        <label class="chk"><input type="checkbox" id="danger-ack" /> ⚠ 위험을 이해했으며 계속합니다</label>
+      </div>
+    </section>
 
     <section class="output">
       <div id="status" class="status"></div>
