@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 렌더러는 로컬 자산만 사용한다(외부 리소스 없음). -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'"
+    />
+    <title>DB Sync Manager</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>DB Sync Manager</h1>
+      <span class="subtitle">MySQL/MariaDB 비교 · 동기화</span>
+    </header>
+
+    <main class="layout">
+      <section class="panels">
+        <!-- Origin -->
+        <form class="conn-card" data-role="origin">
+          <h2>Origin</h2>
+          <label>Host <input name="host" value="127.0.0.1" /></label>
+          <label>Port <input name="port" type="number" value="3306" /></label>
+          <label>ID <input name="user" value="root" /></label>
+          <label>PW <input name="password" type="password" /></label>
+          <label>Database <input name="database" /></label>
+        </form>
+
+        <div class="arrow">↓</div>
+
+        <!-- Target -->
+        <form class="conn-card" data-role="target">
+          <h2>Target</h2>
+          <label>Host <input name="host" value="127.0.0.1" /></label>
+          <label>Port <input name="port" type="number" value="3306" /></label>
+          <label>ID <input name="user" value="root" /></label>
+          <label>PW <input name="password" type="password" /></label>
+          <label>Database <input name="database" /></label>
+        </form>
+      </section>
+
+      <section class="actions">
+        <button id="btn-test-origin" class="secondary">Origin 연결 테스트</button>
+        <button id="btn-test-target" class="secondary">Target 연결 테스트</button>
+        <hr />
+        <button id="btn-analyze" class="primary">① 비교 (Analyze)</button>
+        <button class="disabled" disabled title="준비 중">② 동기화 (Sync)</button>
+        <button class="disabled" disabled title="준비 중">③ Dump</button>
+        <button class="disabled" disabled title="준비 중">④ Restore</button>
+        <button id="btn-history" class="secondary">⑤ History</button>
+      </section>
+    </main>
+
+    <section class="output">
+      <div id="status" class="status"></div>
+      <div id="result" class="result"></div>
+    </section>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>

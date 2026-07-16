@@ -1,0 +1,14 @@
+{
+  // Electron(main/preload) + 코어 라이브러리를 함께 dist 로 빌드한다.
+  // 실제 Node/Electron 실행을 위해 moduleResolution 을 NodeNext 로 둔다.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "dist-app",
+    "rootDir": ".",
+    "types": ["node"]
+  },
+  "include": ["src", "app"],
+  "exclude": ["node_modules", "dist", "test"]
+}

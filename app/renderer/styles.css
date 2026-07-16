@@ -1,0 +1,171 @@
+/* DB Sync Manager 렌더러 스타일 — 다크 톤, 프레임워크 없음 */
+:root {
+  --bg: #1a1d23;
+  --panel: #23272f;
+  --border: #333944;
+  --text: #e6e8eb;
+  --muted: #9aa4b2;
+  --primary: #3b82f6;
+  --ok: #22c55e;
+  --danger: #ef4444;
+  --warn: #eab308;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "Malgun Gothic", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.topbar {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+.topbar h1 {
+  margin: 0;
+  font-size: 18px;
+}
+.subtitle {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 20px;
+  padding: 20px;
+}
+
+.panels {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.arrow {
+  color: var(--muted);
+  font-size: 20px;
+}
+
+.conn-card {
+  width: 100%;
+  max-width: 520px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+}
+.conn-card h2 {
+  grid-column: 1 / -1;
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+.conn-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.conn-card input {
+  background: #1c2027;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 9px;
+  color: var(--text);
+  font-size: 13px;
+}
+.conn-card input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.actions hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 4px 0;
+}
+button {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  transition: filter 0.15s;
+}
+button:hover:not(:disabled) {
+  filter: brightness(1.2);
+}
+button.primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  font-weight: 600;
+}
+button.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.output {
+  padding: 0 20px 24px;
+}
+.status {
+  min-height: 22px;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+.status.ok {
+  color: var(--ok);
+}
+.status.err {
+  color: var(--danger);
+}
+.status.busy {
+  color: var(--warn);
+}
+
+.result {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  min-height: 60px;
+  font-family: "Cascadia Code", "D2Coding", monospace;
+  font-size: 12.5px;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+.tag {
+  display: inline-block;
+  min-width: 34px;
+  text-align: center;
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-right: 8px;
+  font-weight: 600;
+}
+.tag.added { color: var(--ok); }
+.tag.removed { color: var(--danger); }
+.tag.modified { color: var(--warn); }
+.tag.identical { color: var(--muted); }

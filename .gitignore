@@ -3,6 +3,7 @@ node_modules/
 
 # 빌드 산출물
 dist/
+dist-app/
 *.tsbuildinfo
 
 # 테스트/커버리지
