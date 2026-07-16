@@ -48,6 +48,7 @@
   - [x] Difference Review 행 단위 적용/제외 UI(review→plan→apply, 선택 키 기반)
   - [x] Task 저장·불러오기·삭제 + Scheduler 예약(다음 실행 시각 표시)
     - [ ] 예약 자동 실행(무인) — 자격증명 보관 방식 확정 후(현재는 불러오기 후 수동 실행)
+  - [x] IPC 핸들러 분리(app/handlers.ts) + 실 MySQL 핸들러 통합 테스트(6개)
 - [x] 스키마 확장 비교: Index / FK / View / Procedure / Function / Trigger / Event
       (compareSchema 확장 + 매퍼/쿼리 + 실 DB 통합 테스트)
 - [x] 실 DB 통합 테스트 — 임베디드 MySQL(mysql-memory-server)로 커넥터 I/O·트랜잭션·
