@@ -36,6 +36,7 @@ export const CHANNELS = {
   taskList: "dbsync:taskList",
   taskSave: "dbsync:taskSave",
   taskRemove: "dbsync:taskRemove",
+  taskSaveSecret: "dbsync:taskSaveSecret",
 } as const;
 
 /** 렌더러 폼이 넘겨주는 접속 정보(비밀번호 포함, 저장하지 않음). */
@@ -193,4 +194,13 @@ export interface TaskListResult {
 export interface TaskMutateResult {
   ok: boolean;
   message: string;
+  /** 저장된 Task 의 id(예약 자격증명 저장 시 사용). */
+  taskId?: string;
+}
+
+/** 예약 자동 실행용 비밀번호 저장 요청. */
+export interface SaveSecretInput {
+  taskId: string;
+  role: "origin" | "target";
+  password: string;
 }

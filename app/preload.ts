@@ -26,6 +26,7 @@ import {
   type TaskSaveInput,
   type TaskListResult,
   type TaskMutateResult,
+  type SaveSecretInput,
 } from "./ipc.js";
 
 const api = {
@@ -63,6 +64,8 @@ const api = {
     ipcRenderer.invoke(CHANNELS.taskSave, input),
   taskRemove: (id: string): Promise<TaskMutateResult> =>
     ipcRenderer.invoke(CHANNELS.taskRemove, id),
+  taskSaveSecret: (input: SaveSecretInput): Promise<TaskMutateResult> =>
+    ipcRenderer.invoke(CHANNELS.taskSaveSecret, input),
 };
 
 contextBridge.exposeInMainWorld("dbsync", api);

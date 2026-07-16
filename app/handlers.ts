@@ -397,7 +397,7 @@ export function createHandlers(deps: HandlerDeps) {
         if (errors.length) return { ok: false, message: errors.join(" / ") };
         const tasks = await taskStore().load();
         await taskStore().save(upsertTask(tasks, task, new Date()));
-        return { ok: true, message: `저장됨: ${task.name}` };
+        return { ok: true, message: `저장됨: ${task.name}`, taskId: task.id };
       } catch (err) {
         return { ok: false, message: toMessage(err) };
       }

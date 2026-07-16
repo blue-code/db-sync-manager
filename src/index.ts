@@ -132,7 +132,7 @@ export type {
 export { HistoryStore } from "./history/historyStore.js";
 
 // Scheduler (예약)
-export { nextRun, validateSchedule } from "./scheduler/schedule.js";
+export { nextRun, validateSchedule, isDue } from "./scheduler/schedule.js";
 export type { Schedule, Weekday } from "./scheduler/schedule.js";
 
 // 로깅

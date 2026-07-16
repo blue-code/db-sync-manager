@@ -61,3 +61,28 @@ export function nextRun(schedule: Schedule, from: Date): Date {
   }
   return next;
 }
+
+/** now 이하의 가장 최근 예정 시각(daily/weekly). */
+function previousRun(schedule: Schedule, now: Date): Date {
+  if (schedule.kind === "interval") return now; // 사용되지 않음
+  let p = atTime(now, schedule.hour, schedule.minute);
+  if (p.getTime() > now.getTime()) p = new Date(p.getTime() - 24 * 3600_000);
+  if (schedule.kind === "weekly") {
+    while (p.getDay() !== schedule.weekday) p = new Date(p.getTime() - 24 * 3600_000);
+  }
+  return p;
+}
+
+/**
+ * 지금 실행해야 하는지 판정한다.
+ * - interval: 마지막 실행 후 everyMinutes 이상 지났으면(또는 미실행이면) 실행.
+ * - daily/weekly: now 이하의 가장 최근 예정 시각을 마지막 실행이 지나지 않았으면 실행.
+ */
+export function isDue(schedule: Schedule, lastRunAt: Date | null, now: Date): boolean {
+  if (schedule.kind === "interval") {
+    if (!lastRunAt) return true;
+    return now.getTime() - lastRunAt.getTime() >= schedule.everyMinutes * 60_000;
+  }
+  const prev = previousRun(schedule, now);
+  return !lastRunAt || lastRunAt.getTime() < prev.getTime();
+}

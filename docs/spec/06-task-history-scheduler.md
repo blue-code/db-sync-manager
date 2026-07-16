@@ -37,7 +37,19 @@ Task/History 에는 **비밀번호를 저장하지 않는다**(host/port/user/da
 - `Schedule`: `interval`(everyMinutes) / `daily`(hour,minute) / `weekly`(weekday,hour,minute)
 - `validateSchedule(s)` — 범위 검증(hour 0~23, minute 0~59, weekday 0~6=일)
 - `nextRun(schedule, from)` — 다음 실행 시각 계산. 경계 일치는 "다음 주기"로 간주
-- 실제 타이머 구동은 이 계산을 소비하는 상위 런타임 몫
+- `isDue(schedule, lastRunAt, now)` — 지금 실행해야 하는지 판정(예약 자동 실행의 근거)
+  - interval: 마지막 실행 후 간격 경과 / daily·weekly: 최근 예정 시각을 마지막 실행이 지났는지
+
+## 예약 자동 실행 (GUI)
+
+- 오케스트레이션: `app/autorun.ts` — `createAutorun(deps).tick(now)`. 의존성 주입으로
+  자격증명 해석·실행·기록을 위임해 **가짜 의존성으로 완전히 유닛 테스트**한다.
+  자격증명 없음(runTask=null)은 기록하지 않아 다음 tick 에 재시도된다.
+- 자격증명: `app/vault.ts` — Electron `safeStorage` 로 비밀번호를 **암호화 저장**
+  (userData/vault.json, key=`<taskId>:<role>`). 평문 저장 없음, 암호화 불가 환경은 저장 거부.
+- 구동: main 이 1분 간격 tick, runstate.json 에 마지막 실행 시각 보존.
+  syncFine/syncCoarse(백업 선행)·dump/backup 을 무인 실행 지원.
+- 검증: isDue/autorun.tick 순수 로직 유닛 테스트. 볼트·타이머는 실 Electron 세션에서만 동작(스모크 확인).
 
 ## 로깅
 

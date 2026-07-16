@@ -8,14 +8,19 @@
 import { app, BrowserWindow, ipcMain, dialog } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { MysqlConnector, autoDumpFilename } from "../src/index.js";
-import { createHandlers } from "./handlers.js";
+import { readFile, writeFile } from "node:fs/promises";
+import { MysqlConnector, autoDumpFilename, type Task } from "../src/index.js";
+import { createHandlers, type Handlers } from "./handlers.js";
+import { createAutorun } from "./autorun.js";
+import { Vault } from "./vault.js";
 import {
   CHANNELS,
   type ConnForm,
   type DumpParams,
   type SaveDumpResult,
   type PlanRestoreResult,
+  type SaveSecretInput,
+  type TaskMutateResult,
 } from "./ipc.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -36,11 +41,106 @@ function createWindow(): void {
   void win.loadFile(join(__dirname, "renderer", "index.html"));
 }
 
-function registerIpc(): void {
-  const h = createHandlers({
-    connector: new MysqlConnector(),
-    userDataDir: app.getPath("userData"),
+/** 예약 자동 실행에 필요한 접속 정보를 볼트의 비밀번호와 합쳐 만든다(없으면 null). */
+async function resolveConn(
+  vault: Vault,
+  task: Task,
+  role: "origin" | "target",
+): Promise<ConnForm | null> {
+  const saved = task[role];
+  if (!saved) return null;
+  const password = await vault.get(`${task.id}:${role}`);
+  if (password === null) return null;
+  return { ...saved, password };
+}
+
+/** 예약 Task 한 건을 실행한다(자격증명 없으면 null → 다음 tick 재시도). */
+async function runScheduledTask(
+  h: Handlers,
+  vault: Vault,
+  userDataDir: string,
+  task: Task,
+): Promise<{ ok: boolean; message: string } | null> {
+  if (task.kind === "syncFine" || task.kind === "syncCoarse") {
+    const origin = await resolveConn(vault, task, "origin");
+    const target = await resolveConn(vault, task, "target");
+    if (!origin || !target || !task.table || !task.mode) return null;
+    return h.applySync(origin, target, {
+      table: task.table,
+      mode: task.mode,
+      includeDeletes: task.includeDeletes ?? false,
+      backup: true, // 무인 실행은 항상 백업 선행
+    });
+  }
+  if (task.kind === "dump" || task.kind === "backup") {
+    const origin = await resolveConn(vault, task, "origin");
+    if (!origin) return null;
+    const file = join(userDataDir, "backups", autoDumpFilename(origin.database, new Date(), "gzip"));
+    return h.saveDumpTo(origin, { mode: task.dumpMode ?? "all", compression: "gzip" }, file);
+  }
+  return null; // restore 등은 무인 실행 미지원
+}
+
+/** 자동 실행 타이머를 시작한다(앱이 열려 있는 동안 1분 간격). */
+function startAutorun(h: Handlers, vault: Vault, userDataDir: string): void {
+  const runStateFile = join(userDataDir, "runstate.json");
+  const lastRun = new Map<string, Date>();
+  let loaded = false;
+
+  const load = async () => {
+    try {
+      const raw = JSON.parse(await readFile(runStateFile, "utf8")) as Record<string, string>;
+      for (const [id, iso] of Object.entries(raw)) lastRun.set(id, new Date(iso));
+    } catch {
+      /* 없으면 빈 상태 */
+    }
+    loaded = true;
+  };
+  const persist = async () => {
+    const obj: Record<string, string> = {};
+    for (const [id, at] of lastRun) obj[id] = at.toISOString();
+    await writeFile(runStateFile, JSON.stringify(obj), "utf8");
+  };
+
+  const autorun = createAutorun({
+    loadTasks: () => h.taskList().then((r) => (r.tasks ?? []) as Task[]),
+    getLastRun: (id) => lastRun.get(id) ?? null,
+    setLastRun: async (id, at) => {
+      lastRun.set(id, at);
+      await persist();
+    },
+    runTask: (task) => runScheduledTask(h, vault, userDataDir, task),
+    log: (m) => console.log(m),
   });
+
+  setInterval(async () => {
+    if (!loaded) await load();
+    try {
+      await autorun.tick(new Date());
+    } catch (err) {
+      console.error("[autorun] tick 실패:", err);
+    }
+  }, 60_000);
+}
+
+function registerIpc(): void {
+  const userDataDir = app.getPath("userData");
+  const vault = new Vault(join(userDataDir, "vault.json"));
+  const h = createHandlers({ connector: new MysqlConnector(), userDataDir });
+
+  startAutorun(h, vault, userDataDir);
+
+  ipcMain.handle(
+    CHANNELS.taskSaveSecret,
+    async (_e, inp: SaveSecretInput): Promise<TaskMutateResult> => {
+      try {
+        await vault.set(`${inp.taskId}:${inp.role}`, inp.password);
+        return { ok: true, message: "비밀번호를 암호화해 저장했습니다." };
+      } catch (err) {
+        return { ok: false, message: err instanceof Error ? err.message : String(err) };
+      }
+    },
+  );
 
   // 인자를 그대로 넘기는 단순 채널.
   ipcMain.handle(CHANNELS.testConnection, (_e, c: ConnForm) => h.testConnection(c));

@@ -424,8 +424,19 @@ $("#task-save").addEventListener("click", async () => {
   if (dt.length) input.tables = dt;
 
   const res = await window.dbsync.taskSave(input);
-  setStatus(res.message, res.ok ? "ok" : "err");
-  if (res.ok) refreshTasks();
+  if (!res.ok) return setStatus(res.message, "err");
+
+  // 예약 실행용 비밀번호 저장(선택). OS 보안 저장소로 암호화된다.
+  if ($("#task-store-pw").checked && res.taskId) {
+    const o = readConn("origin");
+    const t = readConn("target");
+    if (o.password) await window.dbsync.taskSaveSecret({ taskId: res.taskId, role: "origin", password: o.password });
+    if (t.password) await window.dbsync.taskSaveSecret({ taskId: res.taskId, role: "target", password: t.password });
+    setStatus(res.message + " (예약 비밀번호 암호화 저장)", "ok");
+  } else {
+    setStatus(res.message, "ok");
+  }
+  refreshTasks();
 });
 
 async function refreshTasks() {
