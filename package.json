@@ -1,6 +1,6 @@
 {
   "name": "db-sync-manager",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "MySQL/MariaDB 데이터베이스 비교 및 동기화 도구",
   "type": "module",
   "license": "MIT",
@@ -40,6 +40,10 @@
       "dist-app/**/*",
       "node_modules/**/*",
       "package.json"
+    ],
+    "asarUnpack": [
+      "**/node_modules/mysql2/**",
+      "**/node_modules/iconv-lite/**"
     ],
     "win": {
       "target": "portable",

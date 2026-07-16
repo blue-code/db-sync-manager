@@ -21,7 +21,7 @@ function readConn(role) {
     user: get("user"),
     password: get("password"),
     database: get("database"),
-    ssl: form.querySelector('[name="ssl"]').checked,
+    ssl: !!form.querySelector('[name="ssl"]')?.checked,
   };
 }
 
@@ -78,26 +78,62 @@ function setConnStatus(role, kind, text) {
   el.className = "conn-status " + kind;
 }
 
+/** 예외 객체에서 최대한 많은 정보를 문자열로 뽑아낸다. */
+function errText(err) {
+  if (err == null) return "(알 수 없는 오류)";
+  if (typeof err === "string") return err;
+  const parts = [];
+  if (err.message) parts.push(err.message);
+  if (err.code) parts.push(`code=${err.code}`);
+  if (err.errno) parts.push(`errno=${err.errno}`);
+  if (!parts.length) {
+    try { parts.push(JSON.stringify(err)); } catch { parts.push(String(err)); }
+  }
+  return parts.join(" | ");
+}
+
 $$(".conn-card .test").forEach((btn) =>
   btn.addEventListener("click", async () => {
     const role = btn.dataset.target;
     btn.disabled = true;
     setConnStatus(role, "busy", "⏳ 확인 중…");
     setStatus(`${role} 접속 확인 중...`, "busy");
+
+    let cfg;
     try {
-      const res = await window.dbsync.testConnection(readConn(role));
-      if (res.ok) {
-        setConnStatus(role, "ok", "✓ 접속됨");
-        // 성공한 접속 정보를 기억한다(비밀번호 제외).
-        await window.dbsync.connectionsSave(role, readConn(role));
-        await loadRecents();
-      } else {
-        setConnStatus(role, "err", "✗ 실패");
-      }
-      setStatus(`${role}: ${res.message}`, res.ok ? "ok" : "err");
+      cfg = readConn(role);
     } catch (err) {
       setConnStatus(role, "err", "✗ 오류");
-      setStatus(`${role} 오류: ${err?.message ?? err}`, "err");
+      setStatus(`${role}: 입력값 읽기 실패`, "err");
+      showResult(`[${role}] 폼 읽기 예외\n${errText(err)}`);
+      btn.disabled = false;
+      return;
+    }
+
+    const target = `${cfg.user}@${cfg.host}:${cfg.port}/${cfg.database} (SSL ${cfg.ssl ? "ON" : "OFF"})`;
+    try {
+      const res = await window.dbsync.testConnection(cfg);
+      if (res && res.ok) {
+        setConnStatus(role, "ok", "✓ 접속됨");
+        setStatus(`${role}: 접속 성공`, "ok");
+        showResult(`[${role}] 접속 성공\n대상: ${target}`);
+        // 접속 정보 기억은 부가 기능 — 실패해도 접속 성공을 가리지 않는다.
+        try {
+          await window.dbsync.connectionsSave(role, cfg);
+          await loadRecents();
+        } catch (saveErr) {
+          console.warn("접속 정보 저장 실패(접속 자체는 성공):", saveErr);
+        }
+      } else {
+        setConnStatus(role, "err", "✗ 실패");
+        setStatus(`${role}: 접속 실패`, "err");
+        showResult(`[${role}] 접속 실패\n대상: ${target}\n\n${res ? res.message : "(응답 없음)"}`);
+      }
+    } catch (err) {
+      // IPC 호출 자체가 예외를 던진 경우(핸들러 밖 오류 등) — 원문을 그대로 노출.
+      setConnStatus(role, "err", "✗ 오류");
+      setStatus(`${role}: 호출 예외`, "err");
+      showResult(`[${role}] 연결 테스트 호출 예외\n대상: ${target}\n\n${errText(err)}`);
     } finally {
       btn.disabled = false;
     }

@@ -2,6 +2,18 @@
 
 본 프로젝트의 주요 변경을 기록한다. 형식은 Keep a Changelog 를 따른다.
 
+## [0.2.3] - 2026-07-16
+
+### 버그 수정
+- **접속 성공이 "✗ 오류"로 뒤바뀌던 문제**: 접속 성공 후 "접속 정보 기억"(파일 저장)이
+  실패하면(예: 폴더 쓰기 권한) 그 예외가 접속 결과를 덮어 실패처럼 보였다.
+  저장 side-effect 를 접속 결과와 완전히 분리 — 저장이 실패해도 접속 성공은 그대로 표시.
+- **오류 원문 노출**: 연결 테스트 결과(성공/실패/예외)와 실제 오류 메시지를 결과 패널에
+  크게 표시(대상 host/포트/SSL 여부 포함). 예외는 message/code/errno 까지 표시.
+
+### 개선
+- 패키징 안정성: mysql2/iconv-lite 를 asar 에서 unpack(문자셋/SSL 경로의 지연 로딩 실패 예방)
+
 ## [0.2.2] - 2026-07-16
 
 ### 추가
@@ -58,6 +70,7 @@
 - 이벤트 자동 실행 스케줄러는 앱이 열려 있는 동안만 동작
 - WHERE 조건 덤프 / Oracle 미지원
 
+[0.2.3]: https://github.com/blue-code/db-sync-manager/releases/tag/v0.2.3
 [0.2.2]: https://github.com/blue-code/db-sync-manager/releases/tag/v0.2.2
 [0.2.1]: https://github.com/blue-code/db-sync-manager/releases/tag/v0.2.1
 [0.2.0]: https://github.com/blue-code/db-sync-manager/releases/tag/v0.2.0
