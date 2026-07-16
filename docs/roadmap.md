@@ -32,12 +32,12 @@
 - [x] 동기화 전 자동 백업 (buildBackupDump / createBackup, 기본 gzip)
 - [x] 안전장치: DROP/TRUNCATE/DELETE 경고, Preview SQL, 확인 필요 판정
 
-## Phase 4 — 운영 기능
+## Phase 4 — 운영 기능 ✅
 
-- [ ] Task 추상화(저장·재실행)
-- [ ] History (작업 기록, 재실행)
-- [ ] Scheduler (예약 실행)
-- [ ] 로깅 (실행 SQL / 에러 로그 저장)
+- [x] Task 추상화(저장·재실행, 비밀번호 미저장)
+- [x] History (작업 기록 append-only JSONL, id 재실행 조회)
+- [x] Scheduler (interval/daily/weekly, nextRun 계산)
+- [x] 로깅 (실행 SQL / 에러, LogSink 추상화 + RunLogger)
 
 ## Phase 5 — GUI & 확장
 

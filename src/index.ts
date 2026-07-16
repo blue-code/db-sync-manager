@@ -94,6 +94,38 @@ export type { RestoreOptions } from "./dump/restore.js";
 export { buildBackupDump, createBackup } from "./dump/backup.js";
 export type { BackupOptions, BackupResult } from "./dump/backup.js";
 
+// Task 추상화 (저장·재실행)
+export {
+  createTask,
+  validateTask,
+  generateTaskId,
+  stripPassword,
+} from "./task/task.js";
+export type { Task, TaskKind, TaskInput, SavedConnection } from "./task/task.js";
+export { TaskStore, upsertTask, removeTask } from "./task/taskStore.js";
+
+// History (기록·재실행)
+export { buildHistoryEntry, formatHistoryLine } from "./history/history.js";
+export type {
+  HistoryEntry,
+  HistoryInput,
+  RunStatus,
+  RunCounts,
+} from "./history/history.js";
+export { HistoryStore } from "./history/historyStore.js";
+
+// Scheduler (예약)
+export { nextRun, validateSchedule } from "./scheduler/schedule.js";
+export type { Schedule, Weekday } from "./scheduler/schedule.js";
+
+// 로깅
+export {
+  formatLogLine,
+  MemorySink,
+  RunLogger,
+} from "./logging/logger.js";
+export type { LogEntry, LogLevel, LogSink } from "./logging/logger.js";
+
 // 커넥터 포트 & MySQL 구현
 export type { DbConnector } from "./connector/DbConnector.js";
 export { MysqlConnector } from "./connector/mysqlConnector.js";
