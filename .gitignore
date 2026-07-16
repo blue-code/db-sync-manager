@@ -4,7 +4,11 @@ node_modules/
 # 빌드 산출물
 dist/
 dist-app/
+release/
 *.tsbuildinfo
+
+# 아이콘 생성 미리보기(소스는 icon.svg)
+build/icon-256.png
 
 # 테스트/커버리지
 coverage/

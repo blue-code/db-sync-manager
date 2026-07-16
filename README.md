@@ -87,11 +87,21 @@ Docker 불필요 — 최초 1회 MySQL 바이너리를 자동 다운로드한다
 - 데이터 비교 → 계획 → 실행 라운드트립(upsert)
 - Dump → Restore 라운드트립(이스케이프 값 포함)
 
+## 다운로드 (Windows)
+
+[Releases](https://github.com/blue-code/db-sync-manager/releases) 에서 **포터블 exe**(설치 불필요)를 받아
+바로 실행할 수 있다: `DBSyncManager-<버전>-portable.exe`. (코드 서명은 없어 SmartScreen 경고가
+뜰 수 있다 — "추가 정보 → 실행"으로 진행.)
+
 ## GUI 실행 (Electron)
 
 ```bash
 npm install        # electron 포함(postinstall 로 바이너리 다운로드)
 npm run app:start  # app:build 후 Electron 실행
+
+# 배포 패키징(Windows 포터블 exe → release/)
+npm run make-icon  # build/icon.svg → build/icon.ico
+npm run dist:win
 ```
 
 메인 화면에서 Origin/Target 접속 정보를 입력하고 **연결 테스트 → 비교(Analyze)** 를 수행한다.

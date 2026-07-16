@@ -1,0 +1,38 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4F46E5"/>
+      <stop offset="0.55" stop-color="#7C3AED"/>
+      <stop offset="1" stop-color="#06B6D4"/>
+    </linearGradient>
+    <linearGradient id="cyl" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#E5E7F5"/>
+    </linearGradient>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <!-- 배경 타일 -->
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#bg)"/>
+  <rect x="16" y="16" width="480" height="240" rx="112" fill="#ffffff" opacity="0.06"/>
+
+  <!-- 중앙 데이터베이스 실린더 -->
+  <g filter="url(#sh)">
+    <path d="M176 176 v160 a80 30 0 0 0 160 0 v-160 z" fill="url(#cyl)"/>
+    <ellipse cx="256" cy="176" rx="80" ry="30" fill="#ffffff"/>
+    <path d="M176 232 a80 30 0 0 0 160 0" fill="none" stroke="#B9BEE8" stroke-width="6" stroke-linecap="round"/>
+    <path d="M176 288 a80 30 0 0 0 160 0" fill="none" stroke="#B9BEE8" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <!-- 순환 동기화 화살표 -->
+  <g fill="none" stroke="#22D3EE" stroke-width="24" stroke-linecap="round">
+    <path d="M356 168 a150 150 0 0 1 34 118"/>
+    <path d="M156 344 a150 150 0 0 1 -34 -118"/>
+  </g>
+  <g fill="#22D3EE">
+    <path d="M330 150 l40 6 -18 37 z"/>
+    <path d="M182 362 l-40 -6 18 -37 z"/>
+  </g>
+</svg>

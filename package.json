@@ -4,6 +4,7 @@
   "description": "MySQL/MariaDB 데이터베이스 비교 및 동기화 도구",
   "type": "module",
   "license": "MIT",
+  "author": "Kim Byeongho",
   "main": "dist-app/app/main.js",
   "engines": {
     "node": ">=20"
@@ -16,7 +17,9 @@
     "test:cov": "vitest run --coverage",
     "test:it": "vitest run --config vitest.config.it.ts",
     "app:build": "tsc -p tsconfig.app.json && node app/copy-renderer.mjs",
-    "app:start": "npm run app:build && electron ."
+    "app:start": "npm run app:build && electron .",
+    "make-icon": "node build/make-icon.mjs",
+    "dist:win": "npm run app:build && electron-builder --win portable"
   },
   "keywords": [
     "mysql",
@@ -27,10 +30,32 @@
     "migration",
     "dump"
   ],
+  "build": {
+    "appId": "com.digimaru.dbsyncmanager",
+    "productName": "DB Sync Manager",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist-app/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "build/icon.ico"
+    },
+    "portable": {
+      "artifactName": "DBSyncManager-${version}-portable.exe"
+    }
+  },
   "devDependencies": {
     "@types/node": "^22.10.0",
     "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
     "mysql-memory-server": "^1.14.1",
+    "png-to-ico": "^3.0.2",
+    "sharp": "^0.35.3",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0"
   },
