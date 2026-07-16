@@ -5,6 +5,8 @@ export default defineConfig({
     // 코어 엔진은 순수 함수 위주라 노드 환경으로 충분하다.
     environment: "node",
     include: ["test/**/*.test.ts"],
+    // 통합 테스트(실 MySQL 필요)는 별도 설정(vitest.config.it.ts)으로 돌린다.
+    exclude: ["node_modules/**", "test/integration/**"],
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts"],
